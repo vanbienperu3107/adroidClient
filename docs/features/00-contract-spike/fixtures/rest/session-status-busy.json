@@ -1,0 +1,8 @@
+{
+  "endpoint": "GET /session/status",
+  "status": 200,
+  "auth": "Basic",
+  "note": "Chi session khong-idle xuat hien. Empty object nghia la tat ca idle.",
+  "response_busy": { "ses_REDACTEDA00000000000000001": { "type": "busy" } },
+  "response_all_idle": {}
+}

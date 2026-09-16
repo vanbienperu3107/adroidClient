@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {
+      "endpoint": "GET /session/{unknown-id}",
+      "status": 404,
+      "response": { "name": "NotFoundError", "data": { "message": "Session not found: <REDACTED_ID>" } }
+    },
+    {
+      "endpoint": "GET /global/health (no Authorization)",
+      "status": 401,
+      "response_note": "Body khong chua credential"
+    },
+    {
+      "endpoint": "GET /global/health (sai password)",
+      "status": 401,
+      "response_note": "Nhat quan voi thieu credential"
+    },
+    {
+      "endpoint": "GET /definitely/not/a/path",
+      "status": 200,
+      "response_note": "Server co web fallback — KHONG dung status code de detect endpoint. Kiem tra schema/content-type."
+    }
+  ]
+}

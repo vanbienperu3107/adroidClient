@@ -1,0 +1,6 @@
+{
+  "endpoint": "GET /global/health",
+  "status": 200,
+  "auth": "Basic",
+  "response": { "healthy": true, "version": "1.18.30" }
+}

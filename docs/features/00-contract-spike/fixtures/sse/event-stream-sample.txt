@@ -1,0 +1,22 @@
+# SSE capture (redacted) — GET /event, Basic Auth, OpenCode 1.18.30
+# Chuoi event khi: mo stream -> prompt_async -> abort
+
+data: {"type":"server.connected","properties":{}}
+
+data: {"type":"message.updated","properties":{"info":{"id":"msg_REDACTEDUSER000000000000001","sessionID":"ses_REDACTEDA00000000000000001","role":"user","time":{"created":1789569750816}}}}
+
+data: {"type":"message.part.updated","properties":{"part":{"id":"prt_REDACTEDPART000000000000001","sessionID":"ses_REDACTEDA00000000000000001","messageID":"msg_REDACTEDUSER000000000000001","type":"text","text":"<REDACTED_CONTENT>"}}}
+
+data: {"type":"session.status","properties":{"sessionID":"ses_REDACTEDA00000000000000001","status":{"type":"busy"}}}
+
+data: {"type":"message.updated","properties":{"info":{"id":"msg_REDACTEDASST000000000000001","sessionID":"ses_REDACTEDA00000000000000001","role":"assistant","time":{"created":1789569752078}}}}
+
+data: {"type":"session.updated","properties":{"info":{"id":"ses_REDACTEDA00000000000000001","title":"<REDACTED_TITLE>"}}}
+
+data: {"type":"message.updated","properties":{"info":{"id":"msg_REDACTEDASST000000000000001","sessionID":"ses_REDACTEDA00000000000000001","role":"assistant","error":{"name":"MessageAbortedError","data":{"message":"Aborted"}},"time":{"created":1789569752078,"completed":1789569756915}}}}
+
+data: {"type":"session.status","properties":{"sessionID":"ses_REDACTEDA00000000000000001","status":{"type":"idle"}}}
+
+data: {"type":"session.idle","properties":{"sessionID":"ses_REDACTEDA00000000000000001"}}
+
+data: {"type":"server.heartbeat","properties":{}}
