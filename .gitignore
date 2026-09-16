@@ -27,3 +27,6 @@
 .cxx
 app/release/**
 app/build/**
+
+# Codebase memory index
+/.codebase-memory/

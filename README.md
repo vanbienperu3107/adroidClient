@@ -1,3 +1,7 @@
+# adroidClient
+
+This repository is a fork of [chocydar/GPTMobile](https://github.com/chocydar/GPTMobile). The original project source and license are retained; local changes are documented through this repository's commit history.
+
 <div align="center">
 
 <img width="200" height="200" style="display: block;" src="./images/logo.png">
@@ -84,4 +88,3 @@ Cross platform updates are supported. However, GitHub Releases will be the faste
 See [LICENSE](./LICENSE) for details.
 
 [F-Droid Icon License](https://gitlab.com/fdroid/artwork/-/blob/master/fdroid-logo-2015/README.md)
-
