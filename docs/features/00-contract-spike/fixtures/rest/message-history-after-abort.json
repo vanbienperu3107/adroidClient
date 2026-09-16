@@ -1,0 +1,45 @@
+{
+  "endpoint": "GET /session/{id}/message",
+  "status": 200,
+  "auth": "Basic",
+  "note": "History sau prompt_async + abort. Assistant message giu error MessageAbortedError.",
+  "response": [
+    {
+      "info": {
+        "id": "msg_REDACTEDUSER000000000000001",
+        "sessionID": "ses_REDACTEDA00000000000000001",
+        "role": "user",
+        "time": { "created": 1789569750816 },
+        "agent": "build",
+        "model": { "providerID": "<REDACTED_PROVIDER>", "modelID": "<REDACTED_MODEL>" }
+      },
+      "parts": [
+        {
+          "id": "prt_REDACTEDPART000000000000001",
+          "sessionID": "ses_REDACTEDA00000000000000001",
+          "messageID": "msg_REDACTEDUSER000000000000001",
+          "type": "text",
+          "text": "<REDACTED_CONTENT>"
+        }
+      ]
+    },
+    {
+      "info": {
+        "id": "msg_REDACTEDASST000000000000001",
+        "sessionID": "ses_REDACTEDA00000000000000001",
+        "role": "assistant",
+        "time": { "created": 1789569752078, "completed": 1789569756915 },
+        "error": { "name": "MessageAbortedError", "data": { "message": "Aborted" } },
+        "parentID": "msg_REDACTEDUSER000000000000001",
+        "modelID": "<REDACTED_MODEL>",
+        "providerID": "<REDACTED_PROVIDER>",
+        "mode": "build",
+        "agent": "build",
+        "path": { "cwd": "<PROJECT_A>", "root": "<PROJECT_A>" },
+        "cost": 0,
+        "tokens": { "input": 0, "output": 0, "reasoning": 0, "cache": { "read": 0, "write": 0 } }
+      },
+      "parts": []
+    }
+  ]
+}

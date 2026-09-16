@@ -1,0 +1,18 @@
+{
+  "endpoint": "POST /session",
+  "status": 200,
+  "auth": "Basic",
+  "request": { "title": "spike-session-a" },
+  "response": {
+    "id": "ses_REDACTEDA00000000000000001",
+    "slug": "<REDACTED_SLUG>",
+    "projectID": "global",
+    "directory": "<PROJECT_A>",
+    "path": "",
+    "cost": 0,
+    "tokens": { "input": 0, "output": 0, "reasoning": 0, "cache": { "read": 0, "write": 0 } },
+    "title": "spike-session-a",
+    "version": "1.18.30",
+    "time": { "created": 1789569739696, "updated": 1789569739696 }
+  }
+}
