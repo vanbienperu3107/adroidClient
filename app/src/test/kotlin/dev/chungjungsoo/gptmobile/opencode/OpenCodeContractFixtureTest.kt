@@ -20,7 +20,10 @@ import org.junit.Test
  */
 class OpenCodeContractFixtureTest {
 
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     private fun fixture(name: String): File {
         // Unit tests run with module dir or repo root as workdir depending on invoker.
