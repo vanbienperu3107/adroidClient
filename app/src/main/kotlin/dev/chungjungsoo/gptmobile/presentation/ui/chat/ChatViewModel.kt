@@ -258,6 +258,7 @@ class ChatViewModel @Inject constructor(
             openAIFlow.collect { chunk ->
                 when (chunk) {
                     is ApiState.Success -> _openAIMessage.update { it.copy(content = it.content + chunk.textChunk) }
+
                     ApiState.Done -> {
                         _openAIMessage.update { it.copy(createdAt = currentTimeStamp) }
                         updateLoadingState(ApiType.OPENAI, LoadingState.Idle)
@@ -277,6 +278,7 @@ class ChatViewModel @Inject constructor(
             anthropicFlow.collect { chunk ->
                 when (chunk) {
                     is ApiState.Success -> _anthropicMessage.update { it.copy(content = it.content + chunk.textChunk) }
+
                     ApiState.Done -> {
                         _anthropicMessage.update { it.copy(createdAt = currentTimeStamp) }
                         updateLoadingState(ApiType.ANTHROPIC, LoadingState.Idle)
@@ -296,6 +298,7 @@ class ChatViewModel @Inject constructor(
             googleFlow.collect { chunk ->
                 when (chunk) {
                     is ApiState.Success -> _googleMessage.update { it.copy(content = it.content + chunk.textChunk) }
+
                     ApiState.Done -> {
                         _googleMessage.update { it.copy(createdAt = currentTimeStamp) }
                         updateLoadingState(ApiType.GOOGLE, LoadingState.Idle)
@@ -315,6 +318,7 @@ class ChatViewModel @Inject constructor(
             ollamaFlow.collect { chunk ->
                 when (chunk) {
                     is ApiState.Success -> _ollamaMessage.update { it.copy(content = it.content + chunk.textChunk) }
+
                     ApiState.Done -> {
                         _ollamaMessage.update { it.copy(createdAt = currentTimeStamp) }
                         updateLoadingState(ApiType.OLLAMA, LoadingState.Idle)

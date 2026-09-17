@@ -249,9 +249,7 @@ class ChatRepositoryImpl @Inject constructor(
         messages.forEach { message ->
             when (message.platformType) {
                 null -> result.add(content(role = "user") { text(message.content) })
-
                 ApiType.GOOGLE -> result.add(content(role = "model") { text(message.content) })
-
                 else -> {}
             }
         }
