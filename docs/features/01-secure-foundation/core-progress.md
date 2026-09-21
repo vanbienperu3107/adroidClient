@@ -28,3 +28,13 @@ Normal cho increment concurrency/stale edit: PASS (implementation/test khớp ph
 High cho toàn core: REQUEST_CHANGES. Chưa có persisted cleanup journal/tombstone/orphan recovery, backup export/restore và request generation guard đầy đủ. Không dùng test xanh để tuyên bố SF-01..05 đã hoàn tất.
 
 XHigh toàn core: NOT_RUN, chờ High PASS. UI/onboarding chưa triển khai. Room migration 1→2 compile thành công nhưng chưa có runtime upgrade test; không coi unit suite này chứng minh không mất lịch sử.
+
+## Basic-only UI and backup increment
+
+- Start Screen provides a `Connect OpenCode` entry for users without an enabled provider.
+- Settings provides an `OpenCode servers` entry for provider-only users; routes carry serverId only.
+- Basic server list/edit screen supports draft health test, save, metadata-only edit, delete, and typed status. Draft password is Compose memory only, not SavedStateHandle or navigation.
+- Profile health result uses a request generation guard; stale result after a newer test/save/delete is ignored.
+- Profile export in filesDir contains server metadata only. Runtime DataStore, vault and credentialRef stay under no-backup storage. Export replacement is atomic when supported.
+
+Latest local check: `testDebugUnitTest` PASS after this increment. Local assembleDebug remains NOT_RUN due daemon termination at mergeExtDexDebug; PR CI debug APK check is the packaging evidence. Android emulator/device UI, Keystore process death, real backup transfer and Bearer remain DEFERRED as documented in review.md.

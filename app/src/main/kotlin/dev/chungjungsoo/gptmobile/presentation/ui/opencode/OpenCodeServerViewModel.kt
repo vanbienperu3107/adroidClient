@@ -9,11 +9,11 @@ import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeProfileRepository
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeConnectionState
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeCredential
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeServerProfile
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicLong
 
 @HiltViewModel
 class OpenCodeServerViewModel @Inject constructor(
@@ -32,7 +32,9 @@ class OpenCodeServerViewModel @Inject constructor(
     val formError = _formError.asStateFlow()
     private val requestGeneration = AtomicLong(0)
 
-    init { refresh() }
+    init {
+        refresh()
+    }
 
     fun refresh() = viewModelScope.launch {
         _profiles.value = repository.profiles()

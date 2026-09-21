@@ -17,6 +17,8 @@ import androidx.navigation.navigation
 import dev.chungjungsoo.gptmobile.data.model.ApiType
 import dev.chungjungsoo.gptmobile.presentation.ui.chat.ChatScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.home.HomeScreen
+import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerEditScreen
+import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerListScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.AboutScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.LicenseScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.PlatformSettingScreen
@@ -29,8 +31,6 @@ import dev.chungjungsoo.gptmobile.presentation.ui.setup.SetupCompleteScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setup.SetupViewModel
 import dev.chungjungsoo.gptmobile.presentation.ui.setup.TokenInputScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.startscreen.StartScreen
-import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerEditScreen
-import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerListScreen
 
 @Composable
 fun SetupNavGraph(navController: NavHostController) {

@@ -39,7 +39,10 @@ fun OpenCodeServerListScreen(
             Button(onClick = { onEdit(null) }) { Text("Add server") }
             profiles.forEach { profile ->
                 Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column { Text(profile.displayName); Text(profile.baseUrl) }
+                    Column {
+                        Text(profile.displayName)
+                        Text(profile.baseUrl)
+                    }
                     Row {
                         Button(onClick = { onEdit(profile.serverId) }) { Text("Edit") }
                         Spacer(Modifier.width(8.dp))

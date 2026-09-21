@@ -8,8 +8,8 @@ import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeCredentialVault
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeUrlPolicy
 import dev.chungjungsoo.gptmobile.data.opencode.VaultResult
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeCredential
-import java.io.IOException
 import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,8 +38,7 @@ class OpenCodeProfileRepositoryTest {
             if (failSave) throw IOException("Synthetic storage failure")
             entries[reference] = credential
         }
-        override fun load(serverId: String, reference: String, endpointBinding: String): VaultResult<OpenCodeCredential> =
-            entries[reference]?.let { VaultResult.Success(it) } ?: VaultResult.ReauthenticationRequired
+        override fun load(serverId: String, reference: String, endpointBinding: String): VaultResult<OpenCodeCredential> = entries[reference]?.let { VaultResult.Success(it) } ?: VaultResult.ReauthenticationRequired
         override fun delete(serverId: String, reference: String) {
             entries.remove(reference)
         }

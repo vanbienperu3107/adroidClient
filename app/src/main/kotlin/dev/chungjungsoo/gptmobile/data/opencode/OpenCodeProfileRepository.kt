@@ -5,11 +5,11 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.chungjungsoo.gptmobile.di.OpenCodeProfileStore
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeAuthMode
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeCredential
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeServerProfile
-import dev.chungjungsoo.gptmobile.di.OpenCodeProfileStore
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.UUID
@@ -53,6 +53,7 @@ class DataStoreOpenCodeProfileRepository internal constructor(
     ) : this(dataStore, vault, urlPolicy, context.filesDir.resolve("opencode-profile-export.json"))
 
     private val json = Json { ignoreUnknownKeys = true }
+
     // All profiles share one document, so mutations across servers must serialize too.
     private val mutationMutex = Mutex()
 
@@ -131,7 +132,11 @@ class DataStoreOpenCodeProfileRepository internal constructor(
         val imported = try {
             json.decodeFromString(ExportListSerializer, exportFile.readText()).mapNotNull { exported ->
                 if (exported.authMode != OpenCodeAuthMode.BASIC.name) return@mapNotNull null
-                val canonicalUrl = try { urlPolicy.canonicalize(exported.baseUrl) } catch (_: IllegalArgumentException) { return@mapNotNull null }
+                val canonicalUrl = try {
+                    urlPolicy.canonicalize(exported.baseUrl)
+                } catch (_: IllegalArgumentException) {
+                    return@mapNotNull null
+                }
                 StoredProfile(exported.serverId, exported.displayName, canonicalUrl, exported.authMode, "", exported.profileRevision)
             }
         } catch (_: Exception) {
@@ -168,8 +173,14 @@ class DataStoreOpenCodeProfileRepository internal constructor(
         val lastHealthCheckAt: Long? = null
     ) {
         fun toDomain() = OpenCodeServerProfile(
-            serverId, displayName, baseUrl, OpenCodeAuthMode.valueOf(authMode), credentialRef,
-            profileRevision, lastKnownVersion, lastHealthCheckAt
+            serverId,
+            displayName,
+            baseUrl,
+            OpenCodeAuthMode.valueOf(authMode),
+            credentialRef,
+            profileRevision,
+            lastKnownVersion,
+            lastHealthCheckAt
         )
     }
 

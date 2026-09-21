@@ -24,11 +24,10 @@ object OpenCodeModule {
     @Provides
     @Singleton
     @OpenCodeProfileStore
-    fun provideOpenCodeProfileDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
-        PreferenceDataStoreFactory.create(
-            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
-            produceFile = { context.noBackupFilesDir.resolve("opencode-profiles.preferences_pb") }
-        )
+    fun provideOpenCodeProfileDataStore(@ApplicationContext context: Context): DataStore<Preferences> = PreferenceDataStoreFactory.create(
+        corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+        produceFile = { context.noBackupFilesDir.resolve("opencode-profiles.preferences_pb") }
+    )
 
     @Provides
     @Singleton

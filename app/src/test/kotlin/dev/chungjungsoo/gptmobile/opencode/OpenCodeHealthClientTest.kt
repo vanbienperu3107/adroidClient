@@ -54,8 +54,7 @@ class OpenCodeHealthClientTest {
 
     private object FakeVault : OpenCodeCredentialVault {
         override fun save(serverId: String, reference: String, endpointBinding: String, credential: OpenCodeCredential) = Unit
-        override fun load(serverId: String, reference: String, endpointBinding: String) =
-            VaultResult.Success(OpenCodeCredential.Basic("opencode", "not-a-real-password"))
+        override fun load(serverId: String, reference: String, endpointBinding: String) = VaultResult.Success(OpenCodeCredential.Basic("opencode", "not-a-real-password"))
         override fun delete(serverId: String, reference: String) = Unit
         override fun deleteServer(serverId: String) = Unit
     }

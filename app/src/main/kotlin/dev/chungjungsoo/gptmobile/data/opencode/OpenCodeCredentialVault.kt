@@ -108,8 +108,7 @@ class AndroidKeyStoreCredentialVault @Inject constructor(
         return File(directory, "$reference.bin")
     }
 
-    private fun aad(serverId: String, reference: String, endpointBinding: String) =
-        "$serverId\u0000$reference\u0000$endpointBinding".encodeToByteArray()
+    private fun aad(serverId: String, reference: String, endpointBinding: String) = "$serverId\u0000$reference\u0000$endpointBinding".encodeToByteArray()
 
     @Serializable
     private data class VaultCredential(val username: String, val password: String)

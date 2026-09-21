@@ -42,14 +42,13 @@ class OpenCodeHealthClient internal constructor(
         }
     }
 
-    suspend fun checkDraft(baseUrl: String, credential: OpenCodeCredential.Basic): OpenCodeConnectionState =
-        withContext(Dispatchers.IO) {
-            try {
-                checkRequest(urlPolicy.canonicalize(baseUrl), credential)
-            } catch (_: IllegalArgumentException) {
-                OpenCodeConnectionState.Incompatible
-            }
+    suspend fun checkDraft(baseUrl: String, credential: OpenCodeCredential.Basic): OpenCodeConnectionState = withContext(Dispatchers.IO) {
+        try {
+            checkRequest(urlPolicy.canonicalize(baseUrl), credential)
+        } catch (_: IllegalArgumentException) {
+            OpenCodeConnectionState.Incompatible
         }
+    }
 
     private fun checkRequest(baseUrl: String, credential: OpenCodeCredential): OpenCodeConnectionState {
         val request = Request.Builder()
@@ -82,8 +81,11 @@ class OpenCodeHealthClient internal constructor(
         val health = json.parseToJsonElement(body).jsonObject
         val version = health["version"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
             ?: return OpenCodeConnectionState.Incompatible
-        if (health["healthy"]?.jsonPrimitive?.booleanOrNull == true) OpenCodeConnectionState.Connected(version)
-        else OpenCodeConnectionState.Unhealthy
+        if (health["healthy"]?.jsonPrimitive?.booleanOrNull == true) {
+            OpenCodeConnectionState.Connected(version)
+        } else {
+            OpenCodeConnectionState.Unhealthy
+        }
     } catch (_: Exception) {
         OpenCodeConnectionState.Incompatible
     }
