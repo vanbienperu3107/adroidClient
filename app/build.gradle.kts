@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.ktor.engine)
     implementation(libs.ktor.logging)
     implementation(libs.ktor.serialization)
+    implementation(libs.okhttp)
 
     // License page UI
     implementation(libs.auto.license.core)

@@ -32,3 +32,34 @@ Plan hiện chứa endpoint binding, redirect deny, per-server key, staged refer
 - Test coverage: có mapping; Android/hạ tầng cases DEFERRED, chưa chạy.
 - Runtime tests/CI/build mới: NOT_RUN; chưa sửa code.
 - Implementation Basic-only: được mở gate, phải lặp Normal → High → XHigh trên diff trước merge.
+
+---
+
+## Implementation review — source chưa commit
+
+Fresh Codebase MCP index: `workspace-Project-worktrees-01-secure-foundation`, 1.892 nodes / 5.880 edges. Compile/test evidence: `testDebugUnitTest` PASS local với JDK 17 và Android SDK 34; APK local bị daemon hệ thống kill tại mergeExtDexDebug, nên Android package evidence chuyển CI GitHub.
+
+### Normal — PASS
+
+- Intent Basic-only được giữ: model chỉ có `BASIC`, UI không có Bearer selector; Basic URL/credential/profile/health có bounded context riêng.
+- OpenCode entry có tại Start Screen cho người mới và Settings cho provider-only; route chỉ truyền serverId, không truyền URL/credential.
+- Room warning tồn tại được sửa có migration 1→2, index foreign key và exportSchema=false.
+- Unit tests cover URL policy, health mapping, profile concurrent creates/stale edit/vault failure/metadata edit/export secrecy và backup XML.
+
+### High — PASS WITH DEFERRED GATES
+
+- Client riêng không mutate provider client; redirect disabled, HTTPS policy riêng OpenCode không làm thay đổi Ollama HTTP.
+- DataStore profile có mutex mutation; staged vault reference, generation guard tại ViewModel, per-server key/AAD, noBackup vault và export metadata không chứa credential reference/password.
+- Backup rules avoid global includes, giảm regression backup GPT Mobile. Static verification PASS.
+- Deferred: Android Keystore real process death, actual cloud/device backup restore, Compose emulator UI, HTTPS engine on Android, Bearer gateway. Các mục theo plan 1.2 section 12, không claim PASS.
+
+### XHigh — PASS FOR BASIC-ONLY SOURCE WITH DEFERRED GATES
+
+- Endpoint binding is AAD-bound, redirects blocked, profile mutation/request generation protects stale health response; delete removes vault entry/key; no credential entered in SavedStateHandle/navigation.
+- Residual: profile delete currently commits metadata before vault cleanup; cleanup failure needs a persistent tombstone/retry for crash durability. This is not evidenced and remains DEFERRED/NOT_RUN instead of PASS.
+- Export write after metadata commit is best effort by design; profile correctness is preserved while export recovery/retry is deferred. No release claim of backup restore durability.
+- No app Android UI/browser evidence. Browser cannot substitute native Compose testing.
+
+### Verdict
+
+Source increment is suitable for PR/CI Basic-only review, provided the PR description retains deferred gates. Feature 01 is **not complete** until CI package build and the explicitly deferred runtime gates are either executed or kept excluded from release capability claims.

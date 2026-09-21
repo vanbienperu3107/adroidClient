@@ -29,6 +29,8 @@ import dev.chungjungsoo.gptmobile.presentation.ui.setup.SetupCompleteScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setup.SetupViewModel
 import dev.chungjungsoo.gptmobile.presentation.ui.setup.TokenInputScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.startscreen.StartScreen
+import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerEditScreen
+import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerListScreen
 
 @Composable
 fun SetupNavGraph(navController: NavHostController) {
@@ -44,12 +46,28 @@ fun SetupNavGraph(navController: NavHostController) {
         setupNavigation(navController)
         settingNavigation(navController)
         chatScreenNavigation(navController)
+        openCodeNavigation(navController)
     }
 }
 
 fun NavGraphBuilder.startScreenNavigation(navController: NavHostController) {
     composable(Route.GET_STARTED) {
-        StartScreen { navController.navigate(Route.SETUP_ROUTE) }
+        StartScreen(
+            onStartClick = { navController.navigate(Route.SETUP_ROUTE) },
+            onOpenCodeClick = { navController.navigate(Route.OPEN_CODE_SERVERS) }
+        )
+    }
+}
+
+fun NavGraphBuilder.openCodeNavigation(navController: NavHostController) {
+    composable(Route.OPEN_CODE_SERVERS) {
+        OpenCodeServerListScreen(
+            onBack = { navController.navigateUp() },
+            onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) }
+        )
+    }
+    composable(Route.OPEN_CODE_SERVER_EDIT, arguments = listOf(navArgument("serverId") { defaultValue = "new" })) {
+        OpenCodeServerEditScreen(onBack = { navController.navigateUp() })
     }
 }
 
@@ -209,6 +227,7 @@ fun NavGraphBuilder.settingNavigation(navController: NavHostController) {
             SettingScreen(
                 settingViewModel = settingViewModel,
                 onNavigationClick = { navController.navigateUp() },
+                onNavigateToOpenCode = { navController.navigate(Route.OPEN_CODE_SERVERS_SETTINGS) },
                 onNavigateToPlatformSetting = { apiType ->
                     when (apiType) {
                         ApiType.OPENAI -> navController.navigate(Route.OPENAI_SETTINGS)
@@ -268,6 +287,12 @@ fun NavGraphBuilder.settingNavigation(navController: NavHostController) {
         }
         composable(Route.LICENSE) {
             LicenseScreen(onNavigationClick = { navController.navigateUp() })
+        }
+        composable(Route.OPEN_CODE_SERVERS_SETTINGS) {
+            OpenCodeServerListScreen(
+                onBack = { navController.navigateUp() },
+                onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) }
+            )
         }
     }
 }

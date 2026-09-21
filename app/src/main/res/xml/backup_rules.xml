@@ -6,8 +6,9 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- OpenCode profile/vault state is stored under noBackupFilesDir. Keep
+         existing GPT Mobile backup behavior unchanged; do not add a global
+         include rule that would exclude legacy data. -->
+    <exclude domain="file" path="opencode-vault/" />
+    <exclude domain="file" path="opencode-profiles.preferences_pb" />
 </full-backup-content>
