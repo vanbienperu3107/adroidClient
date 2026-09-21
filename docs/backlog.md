@@ -34,7 +34,7 @@ Epic này chặn mọi epic triển khai phía sau.
 
 | ID | Work item | Phụ thuộc | Tiêu chí hoàn thành |
 | --- | --- | --- | --- |
-| WI-07 | `OpenCodeDatabase` v1 | - | Có server, project, session, message, part, pending prompt, permission, question và sync state; dùng composite keys theo server/directory. |
+| WI-07 | `OpenCodeDatabase` v1 | WI-02 profile repository | Có project, session, message, part, pending prompt, permission, question và sync state; server profile lấy từ DataStore Feature 01, không tạo nguồn profile thứ hai; dùng composite keys theo server/directory, xử lý delete events và orphan cache sau restart. |
 | WI-08 | Project list/current và project selection | WI-05, WI-07 | Một server hỗ trợ nhiều project; mọi request dùng đúng scope. |
 | WI-09 | Session list/status và CRUD | WI-08 | Hiển thị idle/busy/retry và pending badge; rename/delete hoạt động qua contract đã xác minh. |
 | WI-10 | REST history sync và reconcile | WI-07, WI-00c | Transactional sync; snapshot đầy đủ xử lý xóa, phân trang không xóa nhầm, pending local không bị snapshot xóa. |

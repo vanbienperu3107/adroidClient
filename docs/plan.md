@@ -126,7 +126,7 @@ Khuyến nghị tạo OpenCodeDatabase riêng, không trộn ngay vào ChatDatab
 
 Các bảng:
 
-- open_code_servers
+- Server profile nằm trong DataStore riêng của Feature 01, không tạo bảng `open_code_servers` làm nguồn cấu hình thứ hai. Cache Room dùng serverId làm khóa logic; repository phát ProfileChanged/ProfileDeleting và cache reconcile orphan khi startup. Đây là bổ sung thiết kế theo Feature 01 revision 1.2 cho plan 1.4.
 - open_code_projects
 - open_code_sessions
 - open_code_messages
