@@ -63,3 +63,25 @@ Fresh Codebase MCP index: `workspace-Project-worktrees-01-secure-foundation`, 1.
 ### Verdict
 
 Source increment is suitable for PR/CI Basic-only review, provided the PR description retains deferred gates. Feature 01 is **not complete** until CI package build and the explicitly deferred runtime gates are either executed or kept excluded from release capability claims.
+
+---
+
+## Final implementation review — commit bc768cc
+
+Evidence: local `testDebugUnitTest` PASS (JDK 17 / Android SDK 34); GitHub PR #6 head `bc768cc` checks PASS: Debug APK run 35669410646, Kotlin Lint run 35669410686, Unit Tests runs 35669409574 and 35669411877. Local assembleDebug remains environment-limited at mergeExtDexDebug; GitHub Debug APK is packaging evidence.
+
+### Normal — PASS
+
+Implementation matches Basic-only intent: URL policy, Basic vault/profile/health, server management entry points, no credential route arguments, backup exclusion/export, and Room migration. Bearer is absent from selectable UI. Unit tests cover 20 tests with no failure according to the local report.
+
+### High — PASS
+
+Separate OpenCode DI/profile store and OkHttp client avoid mutation of existing provider clients. OpenCode URL restrictions do not change global cleartext policy, so existing Ollama transport remains outside this diff. Migration 1→2 is supplied for the new messages chat_id index. CI debug package, lint and unit checks are all green on the reviewed commit.
+
+### XHigh — PASS WITH EXPLICIT DEFERRED GATES
+
+Credential binding uses per-server Keystore alias plus GCM AAD; redirect follow is disabled; profile edits/deletes invalidate stale health results. Profile export omits credential reference/password. Remaining runtime claims are deliberately deferred: real Android Keystore invalidation/process death, actual cloud/device backup restore, emulator UI, Android TLS and Bearer gateway. These are not marked PASS and must stay excluded from release capability claims until evidence exists.
+
+### Final verdict
+
+**PASS for Basic-only source/CI scope.** Deferred gates remain recorded, not waived. UI device evidence is DEFERRED under the user-approved policy; no browser evidence is claimed for native Compose.
