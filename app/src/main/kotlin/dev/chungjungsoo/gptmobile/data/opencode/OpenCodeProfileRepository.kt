@@ -3,6 +3,7 @@ package dev.chungjungsoo.gptmobile.data.opencode
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -15,6 +16,7 @@ import java.nio.file.StandardCopyOption
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -32,7 +34,7 @@ interface OpenCodeProfileRepository {
         credential: OpenCodeCredential.Basic?
     ): OpenCodeServerProfile
     suspend fun delete(serverId: String)
-    suspend fun recordHealth(serverId: String, version: String?, checkedAt: Long)
+    suspend fun recordHealth(serverId: String, version: String?, checkedAt: Long, expectedRevision: Long)
 }
 
 @Singleton
@@ -80,7 +82,12 @@ class DataStoreOpenCodeProfileRepository internal constructor(
         } else {
             "cred_${UUID.randomUUID().toString().replace("-", "")}"
         }
-        if (credential != null) vault.save(serverId, reference, canonicalUrl, credential)
+        if (credential != null) {
+            // Persist cleanup intent BEFORE the external vault write. A killed process
+            // must never leave an untracked credential behind.
+            queueCleanup(Cleanup(serverId, reference, previous == null))
+            vault.save(serverId, reference, canonicalUrl, credential)
+        }
         val updated = StoredProfile(
             serverId = serverId,
             displayName = displayName.trim(),
@@ -92,16 +99,16 @@ class DataStoreOpenCodeProfileRepository internal constructor(
             lastHealthCheckAt = null
         )
         if (index == -1) all += updated else all[index] = updated
-        try {
-            write(all)
-        } catch (error: Exception) {
-            if (credential != null) vault.delete(serverId, reference)
-            throw error
+        dataStore.edit { preferences ->
+            val cleanup = cleanupEntries(preferences).filterNot { it.reference == reference }.toMutableList()
+            if (credential != null && previous != null && previous.credentialRef.isNotBlank()) {
+                cleanup += Cleanup(serverId, previous.credentialRef, false)
+            }
+            preferences[PROFILES_KEY] = json.encodeToString(ListSerializer, all)
+            preferences[CLEANUP_KEY] = json.encodeToString(CleanupSerializer, cleanup)
+            preferences[EXPORT_PENDING] = true
         }
-        if (credential != null && previous != null && previous.credentialRef != reference) {
-            vault.delete(serverId, previous.credentialRef)
-        }
-        runCatching { writeExport(all) }
+        recover(all)
         updated.toDomain()
     }
 
@@ -109,25 +116,37 @@ class DataStoreOpenCodeProfileRepository internal constructor(
         val all = read().toMutableList()
         val profile = all.firstOrNull { it.serverId == serverId } ?: return@withLock
         all.remove(profile)
-        write(all)
-        vault.delete(serverId, profile.credentialRef)
-        vault.deleteServer(serverId)
-        runCatching { writeExport(all) }
+        // Removal and the tombstone are one DataStore transaction. Subsequent
+        // readers cannot use this profile even if vault cleanup fails.
+        dataStore.edit { preferences ->
+            val cleanup = cleanupEntries(preferences) + Cleanup(serverId, profile.credentialRef, true)
+            preferences[PROFILES_KEY] = json.encodeToString(ListSerializer, all)
+            preferences[CLEANUP_KEY] = json.encodeToString(CleanupSerializer, cleanup)
+            preferences[EXPORT_PENDING] = true
+        }
+        recover(all)
     }
 
-    override suspend fun recordHealth(serverId: String, version: String?, checkedAt: Long): Unit = mutationMutex.withLock {
+    override suspend fun recordHealth(serverId: String, version: String?, checkedAt: Long, expectedRevision: Long): Unit = mutationMutex.withLock {
         val all = read().toMutableList()
         val index = all.indexOfFirst { it.serverId == serverId }
         if (index < 0) return@withLock
         val existing = all[index]
+        if (existing.profileRevision != expectedRevision) return@withLock
         val updated = existing.copy(lastKnownVersion = version, lastHealthCheckAt = checkedAt)
         all[index] = updated
         write(all)
-        runCatching { writeExport(all) }
+        recover(all)
     }
 
     private suspend fun read(): List<StoredProfile> {
-        dataStore.data.first()[PROFILES_KEY]?.let { return json.decodeFromString(ListSerializer, it) }
+        dataStore.data.first()[PROFILES_KEY]?.let {
+            val profiles = json.decodeFromString(ListSerializer, it)
+            recover(profiles)
+            return profiles
+        }
+        // Cleanup must also run when the process died during the first create.
+        recover(emptyList())
         if (!exportFile.exists()) return emptyList()
         val imported = try {
             json.decodeFromString(ExportListSerializer, exportFile.readText()).mapNotNull { exported ->
@@ -147,8 +166,46 @@ class DataStoreOpenCodeProfileRepository internal constructor(
     }
 
     private suspend fun write(profiles: List<StoredProfile>) {
-        dataStore.edit { it[PROFILES_KEY] = json.encodeToString(ListSerializer, profiles) }
+        dataStore.edit {
+            it[PROFILES_KEY] = json.encodeToString(ListSerializer, profiles)
+            it[EXPORT_PENDING] = true
+        }
     }
+
+    private fun cleanupEntries(preferences: Preferences): List<Cleanup> = preferences[CLEANUP_KEY]?.let { json.decodeFromString(CleanupSerializer, it) } ?: emptyList()
+
+    private suspend fun queueCleanup(entry: Cleanup) {
+        dataStore.edit { it[CLEANUP_KEY] = json.encodeToString(CleanupSerializer, cleanupEntries(it) + entry) }
+    }
+
+    private suspend fun recover(profiles: List<StoredProfile>) {
+        for (entry in cleanupEntries(dataStore.data.first())) {
+            if (profiles.any { it.credentialRef == entry.reference && entry.reference.isNotBlank() }) continue
+            try {
+                if (entry.reference.isNotBlank()) vault.delete(entry.serverId, entry.reference)
+                if (entry.deleteKey && profiles.none { it.serverId == entry.serverId }) vault.deleteServer(entry.serverId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Leave the durable tombstone intact for next recovery.
+                continue
+            }
+            dataStore.edit { it[CLEANUP_KEY] = json.encodeToString(CleanupSerializer, cleanupEntries(it) - entry) }
+        }
+        if (dataStore.data.first()[EXPORT_PENDING] == true) {
+            try {
+                writeExport(profiles)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                return // Retry on the next read/mutation, including after restart.
+            }
+            dataStore.edit { it[EXPORT_PENDING] = false }
+        }
+    }
+
+    @Serializable
+    private data class Cleanup(val serverId: String, val reference: String, val deleteKey: Boolean)
 
     private fun writeExport(profiles: List<StoredProfile>) {
         val export = profiles.map { ExportProfile(it.serverId, it.displayName, it.baseUrl, it.authMode, it.profileRevision) }
@@ -195,6 +252,9 @@ class DataStoreOpenCodeProfileRepository internal constructor(
 
     private companion object {
         val PROFILES_KEY = stringPreferencesKey("opencode_profiles_v1")
+        val CLEANUP_KEY = stringPreferencesKey("opencode_cleanup_v1")
+        val EXPORT_PENDING = booleanPreferencesKey("opencode_export_pending")
+        val CleanupSerializer = kotlinx.serialization.builtins.ListSerializer(Cleanup.serializer())
         val ListSerializer = kotlinx.serialization.builtins.ListSerializer(StoredProfile.serializer())
         val ExportListSerializer = kotlinx.serialization.builtins.ListSerializer(ExportProfile.serializer())
     }

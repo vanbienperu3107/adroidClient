@@ -34,15 +34,22 @@ class OpenCodeProfileRepositoryTest {
     private class FakeVault : OpenCodeCredentialVault {
         val entries = mutableMapOf<String, OpenCodeCredential>()
         var failSave = false
+        var failDelete = false
+        var dieAfterSave = false
+        val deletedKeys = mutableSetOf<String>()
         override fun save(serverId: String, reference: String, endpointBinding: String, credential: OpenCodeCredential) {
             if (failSave) throw IOException("Synthetic storage failure")
             entries[reference] = credential
+            if (dieAfterSave) throw AssertionError("Simulated process death after vault write")
         }
         override fun load(serverId: String, reference: String, endpointBinding: String): VaultResult<OpenCodeCredential> = entries[reference]?.let { VaultResult.Success(it) } ?: VaultResult.ReauthenticationRequired
         override fun delete(serverId: String, reference: String) {
+            if (failDelete) throw IOException("Synthetic cleanup failure")
             entries.remove(reference)
         }
-        override fun deleteServer(serverId: String) = Unit
+        override fun deleteServer(serverId: String) {
+            deletedKeys += serverId
+        }
     }
 
     private val store = MemoryStore()
@@ -55,6 +62,63 @@ class OpenCodeProfileRepositoryTest {
         exportFile
     )
     private val credential = OpenCodeCredential.Basic("test-user", "synthetic-password")
+
+    private fun restart() = DataStoreOpenCodeProfileRepository(store, vault, OpenCodeUrlPolicy(false), exportFile)
+
+    @Test
+    fun failedExportIsRetriedAfterRepositoryRestart() = runBlocking {
+        val initial = repository.save(null, "Before", "https://server.test", credential)
+        val staging = exportFile.resolveSibling("${exportFile.name}.staging")
+        assertTrue(staging.mkdir()) // Block writes to the staging file.
+        try {
+            repository.save(initial.serverId, "After", initial.baseUrl, null)
+            assertTrue(exportFile.readText().contains("Before"))
+        } finally {
+            assertTrue(staging.delete())
+        }
+        assertEquals("After", restart().profiles().single().displayName)
+        assertTrue(exportFile.readText().contains("After"))
+    }
+
+    @Test
+    fun restartCleansCredentialWrittenBeforeMetadataCommit() = runBlocking {
+        vault.dieAfterSave = true
+        try {
+            repository.save(null, "Server", "https://server.test", credential)
+            throw IllegalStateException("Expected simulated death")
+        } catch (_: AssertionError) {
+            assertEquals(1, vault.entries.size)
+        }
+        vault.dieAfterSave = false
+        assertTrue(restart().profiles().isEmpty())
+        assertTrue(vault.entries.isEmpty())
+        assertEquals(1, vault.deletedKeys.size)
+    }
+
+    @Test
+    fun deletionTombstoneSurvivesCleanupFailureAndRestart() = runBlocking {
+        val profile = repository.save(null, "Server", "https://server.test", credential)
+        vault.failDelete = true
+        repository.delete(profile.serverId)
+        assertTrue(restart().profiles().isEmpty())
+        assertTrue(vault.entries.containsKey(profile.credentialRef))
+        vault.failDelete = false
+        assertTrue(restart().profiles().isEmpty())
+        assertTrue(vault.entries.isEmpty())
+        assertTrue(vault.deletedKeys.contains(profile.serverId))
+    }
+
+    @Test
+    fun failedOldCredentialCleanupDoesNotDeleteNewReference() = runBlocking {
+        val old = repository.save(null, "Server", "https://server.test", credential)
+        vault.failDelete = true
+        val updated = repository.save(old.serverId, "Updated", old.baseUrl, credential)
+        assertEquals(2, vault.entries.size)
+        vault.failDelete = false
+        assertEquals(updated, restart().profiles().single())
+        assertEquals(setOf(updated.credentialRef), vault.entries.keys)
+        assertTrue(vault.deletedKeys.isEmpty())
+    }
 
     @Test
     fun concurrentCreatesPreserveEveryProfile() = runBlocking {
@@ -111,11 +175,19 @@ class OpenCodeProfileRepositoryTest {
     @Test
     fun healthResultPersistsWithoutChangingCredentialReference() = runBlocking {
         val before = repository.save(null, "Server", "https://server.test", credential)
-        repository.recordHealth(before.serverId, "1.18.30", 123L)
+        repository.recordHealth(before.serverId, "1.18.30", 123L, before.profileRevision)
         val after = repository.profiles().single()
 
         assertEquals(before.credentialRef, after.credentialRef)
         assertEquals("1.18.30", after.lastKnownVersion)
         assertEquals(123L, after.lastHealthCheckAt)
+    }
+
+    @Test
+    fun lateHealthCannotOverwriteEditedProfile() = runBlocking {
+        val old = repository.save(null, "Server", "https://server.test", credential)
+        val current = repository.save(old.serverId, "Edited", old.baseUrl, null)
+        repository.recordHealth(old.serverId, "stale", 999L, old.profileRevision)
+        assertEquals(current, repository.profiles().single())
     }
 }

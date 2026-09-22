@@ -19,6 +19,23 @@ import org.junit.Test
 class OpenCodeHealthClientTest {
 
     @Test
+    fun rejectsMissingOrWrongHealthFieldTypes() = runBlocking {
+        for (body in listOf("{\"version\":\"1\"}", "{\"version\":123,\"healthy\":true}", "{\"version\":\"1\",\"healthy\":\"true\"}")) {
+            assertEquals(OpenCodeConnectionState.Incompatible, client(200, body).check(profile))
+        }
+    }
+
+    @Test
+    fun restoredProfileRequiresCredentialsWithoutNetwork() = runBlocking {
+        assertEquals(OpenCodeConnectionState.ReauthenticationRequired, client(200, "{}").check(profile.copy(credentialRef = "")))
+    }
+
+    @Test
+    fun storedNonLoopbackHttpProfileIsRejected() = runBlocking {
+        assertEquals(OpenCodeConnectionState.Incompatible, client(200, "{}").check(profile.copy(baseUrl = "http://example.test")))
+    }
+
+    @Test
     fun mapsHealthyResponseToConnected() = runBlocking {
         val state = client(200, "{\"healthy\":true,\"version\":\"1.18.30\"}").check(profile)
 

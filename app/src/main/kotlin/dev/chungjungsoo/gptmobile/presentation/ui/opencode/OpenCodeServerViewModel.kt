@@ -46,7 +46,7 @@ class OpenCodeServerViewModel @Inject constructor(
             val generation = requestGeneration.incrementAndGet()
             val existing = _editingProfile.value
             val credential = if (password.isBlank()) null else OpenCodeCredential.Basic(username, password)
-            val profile = repository.save(existing?.serverId, name, url, credential)
+            val profile = repository.save(editingId, name, url, credential)
             refresh()
             val result = healthClient.check(profile)
             if (requestGeneration.get() != generation) return@launch
@@ -71,7 +71,8 @@ class OpenCodeServerViewModel @Inject constructor(
             }
             if (requestGeneration.get() == generation) {
                 _state.value = result
-                existing?.let { recordHealth(it, result) }
+                // Draft tests must never persist health for a different endpoint/credential.
+                if (password.isBlank() && existing != null && existing.baseUrl == url) recordHealth(existing, result)
             }
         } catch (error: IllegalArgumentException) {
             _formError.value = error.message
@@ -88,7 +89,8 @@ class OpenCodeServerViewModel @Inject constructor(
         repository.recordHealth(
             profile.serverId,
             (result as? OpenCodeConnectionState.Connected)?.version,
-            System.currentTimeMillis()
+            System.currentTimeMillis(),
+            profile.profileRevision
         )
         _profiles.value = repository.profiles()
         _editingProfile.value = _profiles.value.firstOrNull { it.serverId == editingId }

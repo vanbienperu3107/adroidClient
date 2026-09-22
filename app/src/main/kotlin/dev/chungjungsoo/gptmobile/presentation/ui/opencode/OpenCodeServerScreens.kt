@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
@@ -15,6 +18,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +28,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeConnectionState
+import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeServerProfile
 import dev.chungjungsoo.gptmobile.util.collectManagedState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,8 +39,24 @@ fun OpenCodeServerListScreen(
     viewModel: OpenCodeServerViewModel = hiltViewModel()
 ) {
     val profiles by viewModel.profiles.collectManagedState()
+    var pendingDelete by remember { mutableStateOf<OpenCodeServerProfile?>(null) }
+    LaunchedEffect(Unit) { viewModel.refresh().join() }
+    pendingDelete?.let { profile ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete server?") },
+            text = { Text("Remove this profile and its saved credentials?") },
+            confirmButton = {
+                Button(onClick = {
+                    pendingDelete = null
+                    viewModel.delete(profile)
+                }) { Text("Delete") }
+            },
+            dismissButton = { Button(onClick = { pendingDelete = null }) { Text("Cancel") } }
+        )
+    }
     Scaffold(topBar = { TopAppBar(title = { Text("OpenCode servers") }) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState())) {
             Button(onClick = { onEdit(null) }) { Text("Add server") }
             profiles.forEach { profile ->
                 Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -46,7 +67,7 @@ fun OpenCodeServerListScreen(
                     Row {
                         Button(onClick = { onEdit(profile.serverId) }) { Text("Edit") }
                         Spacer(Modifier.width(8.dp))
-                        Button(onClick = { viewModel.delete(profile) }) { Text("Delete") }
+                        Button(onClick = { pendingDelete = profile }) { Text("Delete") }
                     }
                 }
             }
@@ -69,7 +90,7 @@ fun OpenCodeServerEditScreen(
     val state by viewModel.state.collectManagedState()
     val formError by viewModel.formError.collectManagedState()
     Scaffold(topBar = { TopAppBar(title = { Text(if (profile == null) "Add OpenCode server" else "Edit OpenCode server") }) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState())) {
             OutlinedTextField(name, { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(url, { url = it }, label = { Text("HTTPS URL") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(username, { username = it }, label = { Text("Basic username") }, modifier = Modifier.fillMaxWidth())

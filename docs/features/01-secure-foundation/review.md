@@ -1,5 +1,7 @@
 # Review Feature 01 — workflow tuần tự
 
+> Cập nhật: các kết luận PASS WITH DEFERRED/PASS for source ở bên dưới là lịch sử, KHÔNG phải approval merge hiện tại. Sau khi rà lại implementation, gate hoàn tất vẫn BLOCKED bởi native UI/Keystore/backup/migration evidence và các acceptance chưa hoàn tất. Unit/build xanh không thay evidence runtime. XHigh không được coi PASS khi High còn blocker.
+
 Worktree: `feature/01-secure-foundation`, baseline `4894e54`. Review tài liệu, không phải test runtime hoặc chứng nhận feature đã hoàn thành.
 
 ## Fingerprint

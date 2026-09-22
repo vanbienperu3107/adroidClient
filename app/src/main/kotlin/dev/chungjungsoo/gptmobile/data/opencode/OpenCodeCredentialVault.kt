@@ -62,7 +62,10 @@ class AndroidKeyStoreCredentialVault @Inject constructor(
             val bytes = fileFor(reference).readBytes()
             if (bytes.size <= IV_LENGTH) return VaultResult.ReauthenticationRequired
             val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.DECRYPT_MODE, keyFor(serverId), GCMParameterSpec(TAG_LENGTH, bytes.copyOfRange(0, IV_LENGTH)))
+            val store = KeyStore.getInstance(ANDROID_KEY_STORE).apply { load(null) }
+            val key = store.getKey("opencode.$serverId", null) as? SecretKey
+                ?: return VaultResult.ReauthenticationRequired
+            cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_LENGTH, bytes.copyOfRange(0, IV_LENGTH)))
             cipher.updateAAD(aad(serverId, reference, endpointBinding))
             val value = json.decodeFromString(VaultCredential.serializer(), cipher.doFinal(bytes.copyOfRange(IV_LENGTH, bytes.size)).decodeToString())
             VaultResult.Success(OpenCodeCredential.Basic(value.username, value.password))
@@ -78,7 +81,13 @@ class AndroidKeyStoreCredentialVault @Inject constructor(
     }
 
     override fun delete(serverId: String, reference: String) {
-        fileFor(reference).delete()
+        val file = fileFor(reference)
+        val staging = File(directory, "${file.name}.staging")
+        for (candidate in listOf(file, staging)) {
+            if (candidate.exists() && !candidate.delete()) {
+                throw java.io.IOException("Credential cleanup failed")
+            }
+        }
     }
 
     override fun deleteServer(serverId: String) {

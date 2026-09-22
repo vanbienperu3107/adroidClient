@@ -1,5 +1,9 @@
 # Backlog: 01 Secure Foundation
 
+## Runtime verification follow-up
+
+Người dùng đã cho phép bypass tạm các case chưa có môi trường runtime. Theo dõi SF-FOLLOWUP-01..05 tại [deferred-validation.md](deferred-validation.md). Các task vẫn OPEN/NOT_RUN, không tính PASS. Quyết định cho phép tiếp tục bước tiếp theo, không xóa nghĩa vụ test sau.
+
 **Nguồn:** [plan chi tiet](plan.md) · **Trang thai:** Chua bat dau
 
 **Revision 1.2:** [requirements-map.md](requirements-map.md) là phân rã chi tiết và coverage map; bảng SF bên dưới là epic-level. Đã bổ sung onboarding OpenCode-only và đồng bộ nguồn profile trong docs/plan.md, docs/backlog.md. Gate Phase 0 chưa được coi PASS từ conditional GO; implementation chờ xử lý blocker.

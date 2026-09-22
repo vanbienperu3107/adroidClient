@@ -34,6 +34,13 @@ class OpenCodeHealthClient internal constructor(
     )
 
     suspend fun check(profile: OpenCodeServerProfile): OpenCodeConnectionState = withContext(Dispatchers.IO) {
+        if (profile.credentialRef.isBlank()) return@withContext OpenCodeConnectionState.ReauthenticationRequired
+        val canonical = try {
+            urlPolicy.canonicalize(profile.baseUrl)
+        } catch (_: IllegalArgumentException) {
+            return@withContext OpenCodeConnectionState.Incompatible
+        }
+        if (canonical != profile.baseUrl) return@withContext OpenCodeConnectionState.Incompatible
         when (val result = vault.load(profile.serverId, profile.credentialRef, profile.baseUrl)) {
             is VaultResult.Success -> checkRequest(profile.baseUrl, result.value)
 
@@ -79,9 +86,11 @@ class OpenCodeHealthClient internal constructor(
 
     private fun parseHealth(body: String): OpenCodeConnectionState = try {
         val health = json.parseToJsonElement(body).jsonObject
-        val version = health["version"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
+        val version = health["version"]?.jsonPrimitive?.takeIf { it.isString }?.content?.takeIf { it.isNotBlank() }
             ?: return OpenCodeConnectionState.Incompatible
-        if (health["healthy"]?.jsonPrimitive?.booleanOrNull == true) {
+        val healthy = health["healthy"]?.jsonPrimitive?.takeUnless { it.isString }?.booleanOrNull
+            ?: return OpenCodeConnectionState.Incompatible
+        if (healthy) {
             OpenCodeConnectionState.Connected(version)
         } else {
             OpenCodeConnectionState.Unhealthy
