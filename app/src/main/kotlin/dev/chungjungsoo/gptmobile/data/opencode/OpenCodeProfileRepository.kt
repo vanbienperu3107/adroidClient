@@ -17,7 +17,10 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
@@ -26,6 +29,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 interface OpenCodeProfileRepository {
+    fun revisions(): Flow<Map<String, Long>>
     suspend fun profiles(): List<OpenCodeServerProfile>
     suspend fun save(
         existingId: String?,
@@ -35,6 +39,9 @@ interface OpenCodeProfileRepository {
     ): OpenCodeServerProfile
     suspend fun delete(serverId: String)
     suspend fun recordHealth(serverId: String, version: String?, checkedAt: Long, expectedRevision: Long)
+
+    /** Execute a local cache operation under the same lock as profile mutations. Never do network IO here. */
+    suspend fun withCurrentProfile(expected: OpenCodeServerProfile, operation: suspend () -> Unit): Boolean
 }
 
 @Singleton
@@ -59,7 +66,26 @@ class DataStoreOpenCodeProfileRepository internal constructor(
     // All profiles share one document, so mutations across servers must serialize too.
     private val mutationMutex = Mutex()
 
+    override fun revisions(): Flow<Map<String, Long>> = dataStore.data.map { preferences ->
+        preferences[PROFILES_KEY]?.let { json.decodeFromString(ListSerializer, it) }
+            .orEmpty().associate { it.serverId to it.profileRevision }
+    }.distinctUntilChanged()
+
     override suspend fun profiles(): List<OpenCodeServerProfile> = mutationMutex.withLock { read().map { it.toDomain() } }
+
+    override suspend fun withCurrentProfile(expected: OpenCodeServerProfile, operation: suspend () -> Unit): Boolean = mutationMutex.withLock {
+        val current = read().firstOrNull { it.serverId == expected.serverId }?.toDomain()
+        if (current == null ||
+            current.profileRevision != expected.profileRevision ||
+            current.baseUrl != expected.baseUrl ||
+            current.credentialRef != expected.credentialRef ||
+            current.authMode != expected.authMode
+        ) {
+            return@withLock false
+        }
+        operation()
+        true
+    }
 
     override suspend fun save(
         existingId: String?,

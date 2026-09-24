@@ -36,6 +36,7 @@ import dev.chungjungsoo.gptmobile.util.collectManagedState
 fun OpenCodeServerListScreen(
     onBack: () -> Unit,
     onEdit: (String?) -> Unit,
+    onBrowse: (String) -> Unit = {},
     viewModel: OpenCodeServerViewModel = hiltViewModel()
 ) {
     val profiles by viewModel.profiles.collectManagedState()
@@ -63,6 +64,7 @@ fun OpenCodeServerListScreen(
                     Column {
                         Text(profile.displayName)
                         Text(profile.baseUrl)
+                        Button(onClick = { onBrowse(profile.serverId) }) { Text("Projects") }
                     }
                     Row {
                         Button(onClick = { onEdit(profile.serverId) }) { Text("Edit") }
