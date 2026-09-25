@@ -14,14 +14,16 @@ Lý do: Ollama HTTP nội bộ là capability legacy hiện hữu; cấm clearte
 
 Feature 06 phải test OpenCode HTTP bị reject trước credential request, đồng thời regression test Ollama HTTP legacy theo môi trường test được cấp. Không claim “toàn app secure transport only” trong release notes.
 
-## HR-D02: Release owner input
+## HR-D02: Release ownership và promotion
 
-Chưa có giá trị cụ thể do người dùng chưa chỉ định. Các input dưới đây là BLOCKED, không tự đoán:
+**Quyết định người dùng:** promotion mặc định qua GitHub prerelease. Repository owner phê duyệt release và là rollback/on-call owner.
 
-- Kênh promotion (GitHub prerelease/stable, Play Internal/Closed hay cả hai).
-- Release owner và rollback owner/on-call.
-- Thiết bị/API benchmark matrix.
-- Performance budgets p50/p95.
-- Artifact/log/report retention và approval policy.
+Release record phải chỉ rõ tag, commit SHA, artifact hashes, CI evidence và hướng dẫn rollback về prerelease trước. Không tự động chuyển sang GitHub stable hay Google Play khi chưa có lệnh mới.
 
-Feature 06 chỉ production-ready sau khi input được cung cấp và HR-06/HR-10 có evidence thực tế.
+## HR-D03: Android runtime evidence
+
+**Quyết định người dùng:** bỏ qua việc cấp thiết bị/emulator ADB trong đợt này.
+
+Native UI, Room runtime, TLS Android engine, process-death và backup/restore phải được ghi `NOT_RUN`, không được suy ra PASS từ unit/CI. Device/API matrix và performance p50/p95 vẫn là input `BLOCKED` nếu Feature 06 cần production-ready. Retention và approval policy ngoài release-owner approval vẫn chưa được cung cấp.
+
+Feature 06 chỉ production-ready sau khi các input còn lại được cung cấp và HR-06/HR-10 có evidence thực tế.

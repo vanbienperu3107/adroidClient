@@ -41,4 +41,4 @@ Chi review sau khi High PASS. Verdict: **PASS cho failure-mode va evidence desig
 
 **PASS chi cho design phan ra/impact/testcase** tai source revision `08b9bc21d392f045114a180611e7760d33bcbe20`. Sau khi implementation bat dau hoac tai lieu doi, fingerprint/evidence nay het hieu luc o phan bi anh huong va phai review lai Normal -> High -> XHigh tren diff va evidence thuc te.
 
-Feature 06 production/release readiness: **NOT_RUN**, khong phai PASS. Dieu kien mo gate HR-01 la SHA tich hop Feature 01-05 va input owner/CI/device/server duoc liet ke trong `plan.md`; khong co commit, push, merge, tag hay release nao duoc thuc hien trong pham vi nay.
+Feature 06 production/release readiness: **NOT_RUN**, khong phai PASS. Da chot GitHub prerelease va repository owner cho approval/rollback; dieu kien mo gate HR-01 van la SHA tich hop Feature 01-05 va input CI/device/server con lai duoc liet ke trong `plan.md`. Khong co tag hay release nao duoc thuc hien trong pham vi nay.

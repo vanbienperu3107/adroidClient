@@ -41,7 +41,7 @@ Khong mo rong chuc nang OpenCode, giao thuc server, UI product, migration destru
 ## 5. Phu thuoc, gia dinh va blocker
 
 - HR-01..08 chi bat dau sau khi Feature 01-05 da co SHA tich hop va contract OpenCode target duoc pin. Baseline hien tai chua phai bang chung tat ca feature truoc da merge/verified.
-- Can release owner cung cap: thiet bi/API target, benchmark budget, keystore/certificate fingerprint allowlist, distribution channel, retention policy, changelog/approval va rollback owner. Day la input bat buoc, khong tu y suy doan.
+- Da chot: GitHub prerelease la kenh promotion mac dinh; repository owner la release approval va rollback/on-call owner. Van can release owner cung cap: thiet bi/API target, benchmark budget, keystore/certificate fingerprint allowlist, retention policy va changelog. Day la input bat buoc, khong tu y suy doan.
 - Can ha tang: emulator/device farm, test OpenCode server co du lieu synthetic, desktop peer disposable, backup transport/restore-capable device, secret manager va protected CI environment. Thieu bat ky input nao thi testcase tuong ung `BLOCKED`, khong phai `PASS`.
 - Chi co the phat hanh sau khi moi testcase release-required co evidence dung SHA va ca ba review implementation Normal -> High -> XHigh PASS. `NOT_RUN`, `DEFERRED`, skipped, artifact unsigned va CI cua revision khac khong duoc coi la PASS.
 
