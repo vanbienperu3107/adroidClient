@@ -3,6 +3,7 @@ package dev.chungjungsoo.gptmobile.data.opencode
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeScope
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeServerProfile
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeSessionKey
+import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -18,6 +19,7 @@ data class OpenCodeBrowseData(
     val sessions: List<CachedOpenCodeSession> = emptyList(),
     val messages: List<OpenCodeHistoryMessage> = emptyList(),
     val pending: Map<String, Int>? = null,
+    val prompts: List<CachedOpenCodePendingPrompt> = emptyList(),
     val stale: Boolean = false,
     val error: String? = null,
     val locked: Boolean = false
@@ -27,6 +29,7 @@ data class OpenCodeBrowseData(
 class OpenCodeBrowseRepository(
     private val profiles: OpenCodeProfileRepository,
     private val api: OpenCodeReadApi,
+    private val sse: OpenCodeSseApi,
     private val dao: OpenCodeCacheDao
 ) {
     private val mutex = Mutex()
@@ -126,6 +129,14 @@ class OpenCodeBrowseRepository(
         }
     }
 
+    suspend fun events(serverId: String, directory: String, onEvent: (OpenCodeSseEvent) -> Unit): OpenCodeReadResult {
+        val p = profile(serverId) ?: return OpenCodeReadResult.ReauthenticationRequired
+        if (denied(p)) return OpenCodeReadResult.ReauthenticationRequired
+        val result = sse.stream(p, directory, onEvent)
+        observeAuth(p, result)
+        return result
+    }
+
     suspend fun history(serverId: String, directory: String, session: String, before: String? = null): OpenCodeBrowseData = mutex.withLock {
         val p = profile(serverId) ?: return@withLock OpenCodeBrowseData(locked = true)
         // Scope ownership must be verified before reading a server ID from a route.
@@ -140,6 +151,10 @@ class OpenCodeBrowseRepository(
                 return@withLock OpenCodeBrowseData(error = "Invalid history response")
             }
             if (!profiles.withCurrentProfile(p) { dao.storeHistory(serverId, directory, session, p.profileRevision, page) }) return@withLock OpenCodeBrowseData(locked = true)
+            val serverMessageIds = page.messages.map { it.id }.toSet()
+            dao.pendingPrompts(serverId, directory, session, p.profileRevision)
+                .filter { it.state == "ACCEPTED" && it.clientMessageId in serverMessageIds }
+                .forEach { dao.updatePendingPrompt(serverId, directory, session, it.clientMessageId, "CONFIRMED") }
             // Absence in a page is not deletion. Verify cached misses individually.
             // Bound work per refresh to avoid unbounded network fan-out.
             val present = page.messages.map { it.id }.toSet()
@@ -154,15 +169,63 @@ class OpenCodeBrowseRepository(
             }
         }
         var messages = emptyList<OpenCodeHistoryMessage>()
+        var prompts = emptyList<CachedOpenCodePendingPrompt>()
         if (!profiles.withCurrentProfile(p) {
                 val rows = dao.messages(serverId, directory, session, p.profileRevision)
                 val parts = dao.parts(serverId, directory, session).groupBy { it.messageId }
                 messages = rows.map { m -> OpenCodeHistoryMessage(m.messageId, m.role, parts[m.messageId].orEmpty().map { OpenCodeHistoryPart(it.partId, it.type, it.text) }) }
+                dao.recoverPendingPrompts(serverId, directory, session, p.profileRevision)
+                prompts = dao.pendingPrompts(serverId, directory, session, p.profileRevision)
             }
         ) {
             return@withLock OpenCodeBrowseData(locked = true)
         }
-        OpenCodeBrowseData(messages = messages, stale = response !is OpenCodeReadResult.Success)
+        OpenCodeBrowseData(messages = messages, prompts = prompts, stale = response !is OpenCodeReadResult.Success)
+    }
+
+    suspend fun prompt(serverId: String, directory: String, session: String, content: String): String? = mutex.withLock {
+        val p = profile(serverId) ?: return@withLock "Reauthentication required"
+        if (content.isBlank() || content.length > 64_000) return@withLock "Prompt must contain 1 to 64,000 characters"
+        if (!owned(p, directory, session)) return@withLock "Cannot verify session ownership; refresh before sending"
+        if (denied(p)) return@withLock "Reauthentication required"
+        if (dao.activePromptCount(serverId, directory, session, p.profileRevision) > 0) return@withLock "A prompt is already awaiting confirmation"
+        val clientMessageId = "msg_" + UUID.randomUUID().toString().replace("-", "")
+        val pending = CachedOpenCodePendingPrompt(serverId, directory, session, clientMessageId, p.profileRevision, content, "PENDING", null, System.currentTimeMillis())
+        if (!profiles.withCurrentProfile(p) { dao.upsertPendingPrompt(pending) }) return@withLock "Profile changed"
+        dao.updatePendingPrompt(serverId, directory, session, clientMessageId, "SENDING")
+        val payload = buildJsonObject {
+            put("messageID", clientMessageId)
+            put(
+                "parts",
+                kotlinx.serialization.json.buildJsonArray {
+                    add(
+                        buildJsonObject {
+                            put("type", "text")
+                            put("text", content)
+                        }
+                    )
+                }
+            )
+        }.toString()
+        val result = api.post(p, listOf("session", session, "prompt_async"), directory, payload, 204)
+        if (observeAuth(p, result)) {
+            dao.updatePendingPrompt(serverId, directory, session, clientMessageId, "FAILED", "Authentication required")
+            return@withLock "Reauthentication required"
+        }
+        when (result) {
+            is OpenCodeReadResult.Accepted -> dao.updatePendingPrompt(serverId, directory, session, clientMessageId, "ACCEPTED")
+            is OpenCodeReadResult.HttpFailure -> dao.updatePendingPrompt(serverId, directory, session, clientMessageId, "FAILED", "Server rejected the prompt (${result.status})")
+            else -> dao.updatePendingPrompt(serverId, directory, session, clientMessageId, "UNKNOWN", "The server may have received this prompt; do not resend automatically")
+        }
+        null
+    }
+
+    suspend fun abort(serverId: String, directory: String, session: String): String? = mutex.withLock {
+        val p = profile(serverId) ?: return@withLock "Reauthentication required"
+        if (!owned(p, directory, session)) return@withLock "Cannot verify session ownership; refresh before aborting"
+        val result = api.post(p, listOf("session", session, "abort"), directory, "{}", 200)
+        if (observeAuth(p, result)) return@withLock "Reauthentication required"
+        return@withLock if (result is OpenCodeReadResult.Success) null else "Abort outcome uncertain; refresh session status"
     }
 
     suspend fun mutate(serverId: String, directory: String, session: String, title: String?): String? = mutex.withLock {

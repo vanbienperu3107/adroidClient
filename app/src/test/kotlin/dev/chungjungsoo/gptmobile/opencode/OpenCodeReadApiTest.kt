@@ -56,4 +56,16 @@ class OpenCodeReadApiTest {
         }.build()
         assertEquals(OpenCodeReadResult.HttpFailure(401), OpenCodeReadApi(vault, OpenCodeUrlPolicy(false), client).get(profile, listOf("session"), null))
     }
+
+    @Test fun promptPostAccepts204WithoutTreatingItAsJson() = runBlocking {
+        val client = OkHttpClient.Builder().addInterceptor {
+            assertEquals("POST", it.request().method)
+            assertEquals("/prefix/session/ses_test/prompt_async", it.request().url.encodedPath)
+            Response.Builder().request(it.request()).protocol(Protocol.HTTP_1_1).code(204).message("accepted").build()
+        }.build()
+        assertEquals(
+            OpenCodeReadResult.Accepted(204),
+            OpenCodeReadApi(vault, OpenCodeUrlPolicy(false), client).post(profile, listOf("session", "ses_test", "prompt_async"), "/Project", "{}", 204)
+        )
+    }
 }
