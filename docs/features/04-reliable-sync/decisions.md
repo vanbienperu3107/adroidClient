@@ -15,6 +15,12 @@
 
 Dirty overflow không discard state rồi báo synced: đánh dấu scope dirty-all, bỏ event buffer, chạy full REST reconcile. Profile revision/directory/server đổi hủy owner cũ, mọi callback cũ no-op.
 
+## RS-D02: SSE baseline target
+
+Probe target version `1.18.30` đã pin legacy `GET /event?directory=...`: Basic Auth, `text/event-stream`, frame `data` JSON `{id,type,properties}`, và không có cursor/resume. Xem [contract-probe-2026-09-25.md](contract-probe-2026-09-25.md).
+
+Do không có replay, mọi reconnect/foreground phải REST authoritative reconcile toàn scope trước stream. `session.deleted` chỉ mark dirty; complete snapshot hoặc owned point-read 404 mới prune cache.
+
 ## Gate còn lại
 
-RS-001 vẫn BLOCKED cho implementation production: server phải pin SSE endpoint, auth, event envelope, scope, resume/cursor, delete semantics và retry error classes. Quyết định này không biến contract thiếu thành PASS.
+RS-001 là **PARTIAL**, chưa PASS production: chưa có fixture live cho payload non-empty của history/session, 403, abrupt disconnect và concurrent desktop mutation. Không được thêm resume/Last-Event-ID theo suy đoán; các case còn thiếu phải ở fake/controlled server hoặc evidence target trước release.

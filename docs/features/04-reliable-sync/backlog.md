@@ -4,7 +4,7 @@ Trạng thái tổng: **PLANNED**; nhiệm vụ hiện tại chỉ tạo docs.
 
 | ID | Input | Output | Scope | Deps | Acceptance | Status |
 |---|---|---|---|---|---|---|
-| RS-001 | REST hiện hữu, backend SSE spec, product lifecycle | Contract/ADR endpoint, envelope, auth, cursor, delete/retry | data/opencode docs | Backend/product | Schema versioned, event mapping, unknown/401/403, snapshot boundary, thresholds approved | **BLOCKED:** backend contract |
+| RS-001 | REST hiện hữu, probe target 1.18.30, product lifecycle | Contract/ADR endpoint, envelope, auth, no-resume rule, delete/retry | data/opencode docs | Backend/product | Legacy `/event` Basic + directory + JSON envelope version-pinned; reconnect full REST reconcile; unknown/401/403 and remaining failure fixtures recorded | **PARTIAL:** 403/disconnect/concurrent fixtures pending |
 | RS-002 | RS-001, OpenCodeReadApi, profile/url | SSE transport/parser fakeable | data/opencode/OpenCodeSse*, DI | RS-001 | AC-01/02/09: scoped request, frame cap, cancellation closes resource | PLANNED |
 | RS-003 | RS-001/002, lifecycle/connectivity | Owner map, generation, bounded dirty/coalesce, full-jitter retry | data/opencode/OpenCodeReliableSync*, DI | RS-002 | AC-01/02/03/04/07: atomic ownership, stale no-op, overflow snapshot | PLANNED |
 | RS-004 | RS-003, decoder/DAO | Reconcile transaction, snapshot upsert/prune, point-404 confirmation | CacheDatabase/repository | RS-003 | AC-05/06/09: no duplicate or cross-scope delete | PLANNED |

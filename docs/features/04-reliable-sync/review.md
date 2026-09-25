@@ -16,12 +16,12 @@ Review architecture/dependencies/callers/shared state/network/database/auth/test
 
 ## XHigh — PASS (design only)
 Review failure mode, race/process death, loss, credential boundary, evidence reliability.
-- **X-01 resolved:** SSE contract/resume/threshold không có evidence. RS-001 hard blocker; không đoán endpoint/Last-Event-ID; runtime test NOT_RUN.
+- **X-01 resolved:** target SSE baseline is now probed at version 1.18.30. The legacy endpoint has no documented resume, so design requires full REST reconcile rather than guessed Last-Event-ID; remaining live failure cases stay PARTIAL and runtime tests remain NOT_RUN.
 - **X-02 resolved:** không có desktop module. Desktop là external concurrent client; TC-RS-09 E2E bắt buộc.
 - **Verdict PASS cho design docs**, không phải quyền implement. Chỉ implement sau RS-001 và post-diff Normal→High→XHigh PASS trên đúng SHA.
 
 ## Deferred/blockers
-1. Backend endpoint/auth/envelope/version, resume semantics, event completeness.
+1. Non-empty session/history event fixtures, 403 semantics, abrupt disconnect, and event completeness.
 2. Product/backend dirty cap/debounce/backoff/lifecycle/fallback thresholds.
 3. Controlled server, desktop client, Android lifecycle environment cho TC-RS-08/09/12.
 
