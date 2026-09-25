@@ -14,6 +14,10 @@ Nếu contract server mục tiêu không trả action `always`, UI không hiển
 
 `Always` chỉ gửi remote enum/payload đã version-pin ở AI-01. Không tạo local cached permanent allow, không áp dụng quyền cũ cho request/tool/path mới và không auto-approve sau restart.
 
+## AI-D02: Target API baseline
+
+Probe target OpenCode `1.18.30` đã pin legacy reply enum `once|always|reject`, path/body/200-400-404 của permission/question, empty-list behavior, diff schema và event names. Xem [contract-probe-2026-09-25.md](contract-probe-2026-09-25.md).
+
 ## Gate còn lại
 
-AI-01 vẫn BLOCKED đến khi target server xác minh endpoint/payload/error cho permission/question, status resolved, event desktop-resolved và payload tool/diff. Quyết định wording không thay thế evidence server.
+AI-01 là **PARTIAL**, không phải PASS actionable UI: thiếu pending fixture thật cho resolution/expiry/desktop race/pagination, tool payload và byte/line/hunk budget. Quyết định wording không thay thế evidence server; `Always` chỉ bật khi fixture xác minh request có scope/tool/pattern đủ để người dùng hiểu remote action.

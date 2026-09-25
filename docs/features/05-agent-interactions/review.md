@@ -57,4 +57,4 @@ Evidence: plan now specifies failure policy for timeout, cancellation, process d
 
 ## Final design verdict
 
-PASS for documentation design at the stated revision. This is not authorization to mark implementation, API capability, runtime validation or release readiness PASS. Before code starts, AI-01 must pass with target-server evidence; if it cannot establish `always` or reply/reject semantics, affected items are BLOCKED and require a scope/product decision.
+PASS for documentation design at the stated revision. The target-server probe now makes AI-01 PARTIAL: endpoint/path/body, enum and 200/400/404 are pinned, but live pending-resolution, pagination, desktop race, tool payload and render budgets are not. This is not authorization to mark implementation, actionable API capability, runtime validation or release readiness PASS.

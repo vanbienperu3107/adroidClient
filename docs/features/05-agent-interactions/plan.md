@@ -13,7 +13,7 @@ Không sửa provider chat hiện hữu (`ChatRepositoryImpl`, `ChatViewModel`, 
 - Codebase MCP đúng worktree `workspace-Project-worktrees-05-agent-interactions`, index ready ở SHA baseline; coverage không có recorded issue cho các source được dẫn chiếu, nhưng đây chỉ là best-effort.
 - `OpenCodeBrowseRepository.sessions` hiện chỉ đọc `/permission` và `/question` để tạo badge tổng theo `sessionID`; UI hiện nói reply thuộc Feature 05. Chưa có entity/persistence/action API cho pending.
 - `OpenCodeReadApi` chấp nhận duy nhất response HTTP 200 JSON và mutation `PATCH`/`DELETE`; Feature 05 cần transport/action contract riêng để xử lý `POST`, body rỗng và response resolve/expired đã được xác minh.
-- Spike 1.18.30 đã xác minh `GET /permission`, `GET /question`, `GET /session/{id}/diff` và envelope SSE. Nó **chưa** xác minh permission/question reply/reject, schema permission/question, event tool/diff, hay semantics `always`; không suy diễn từ API SDK/plan tổng.
+- Probe target 1.18.30 đã pin legacy `/permission`, `/question`, reply/reject path/body/200-400-404 schema, diff entry và envelope SSE; evidence tại [contract-probe-2026-09-25.md](contract-probe-2026-09-25.md). Empty-list và synthetic 404 không thay thế fixture pending thật: semantics resolution/expiry/pagination/tool payload/budget vẫn `PARTIAL`, không suy diễn từ OpenAPI.
 - REST snapshot là nguồn trạng thái cuối; SSE chỉ đưa notification/dirty signal. `permission.asked/replied`, `question.*`, `session.diff` chỉ reducer sau khi AI-01 có fixture/schema version-pinned.
 
 ## Requirements và acceptance
@@ -44,7 +44,7 @@ Dialog là projection của current pending key. Khi snapshot/SSE authoritative 
 ## Dependencies, assumptions và blockers
 
 - Phụ thuộc implementation/evidence Feature 03 (`prompt`/session UI) và Feature 04 (single active SSE, lifecycle/reconcile/generation). Nếu chưa được tích hợp vào baseline, Feature 05 chỉ bắt đầu các adapter phù hợp sau khi contract tương ứng được present.
-- AI-01 là blocker bắt buộc trước mọi reply/reject/reducer/persistence semantic: probe phải pin server version, endpoint/method/body, once/always/reject semantics, response 2xx/204/404/409/401/403, directory/session ownership, pagination/completeness, schema/IDs, max payload và SSE event fixtures.
+- AI-01 là gate `PARTIAL`: target version đã pin endpoint/method/body, enum once/always/reject, 200/400/404, IDs/schema và SSE names. Fixture pending thật vẫn bắt buộc trước reply/reject/reducer/persistence: xác minh resolution/expiry, directory/session ownership, pagination/completeness, tool payload, max payload và event desktop-resolved.
 - Wording đã chốt tại [decisions.md](decisions.md): `Always allow — phạm vi và thời hạn do OpenCode server quyết định.` AI-01 vẫn phải xác minh remote capability; nếu server không có `always`, UI không hiển thị action giả.
 - Không đưa secret, raw payload, user prompt, diff/tool output hoặc pending action vào SavedStateHandle, route, logs, analytics, Auto Backup hay device transfer.
 
