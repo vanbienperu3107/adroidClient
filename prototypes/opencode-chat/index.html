@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prototype: OpenCode chat trên Android</title>
+<link rel="icon" href="data:,">
+<!--
+  Prototype tĩnh (không phải code app). Mục đích: chốt hướng thiết kế cho plan.md §10 "OpenCode chat screen"
+  trước khi viết Jetpack Compose. Dữ liệu là giả lập, không gọi mạng, không chứa credential.
+
+  Design tokens (map sang Material 3 ColorScheme khi làm Compose):
+    --ink        #17202B  onSurface
+    --slate      #5A6776  onSurfaceVariant
+    --paper      #F2F4F1  background (xám rêu nhạt, không phải kem)
+    --sheet      #FFFFFF  surface
+    --agent      #3D55C8  primary (màu của agent / busy)
+    --signal     #E9A23B  tertiary (cần người quyết định: permission/question)
+    --add / --del #2E7A55 / #B2453A  diff
+  Type: IBM Plex Sans (UI), JetBrains Mono (chỉ cho code/lệnh/đường dẫn thật).
+  Điểm nhấn duy nhất: sheet permission với lệnh hiển thị lớn.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #17202B;
+    --slate: #5A6776;
+    --line: #D9DED8;
+    --paper: #F2F4F1;
+    --sheet: #FFFFFF;
+    --agent: #3D55C8;
+    --agent-soft: #E6E9F8;
+    --signal: #E9A23B;
+    --signal-soft: #FCF1DE;
+    --add: #2E7A55;
+    --add-soft: #E3F1E9;
+    --del: #B2453A;
+    --del-soft: #F7E4E1;
+    --ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --code: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: var(--ui);
+    color: var(--ink);
+    background: #C9CFC8;
+    display: grid;
+    place-items: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Code phải hiển thị đúng ký tự gốc: không ghép != thành ≠ */
+  code, pre, .path, .file, .command { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+  :focus-visible { outline: 3px solid var(--agent); outline-offset: 2px; border-radius: 6px; }
+
+  /* Khung điện thoại chỉ dùng khi xem trên desktop */
+  .device {
+    position: relative;
+    width: 390px;
+    height: min(844px, calc(100dvh - 48px));
+    background: var(--paper);
+    border-radius: 36px;
+    overflow: hidden;
+    box-shadow: 0 0 0 10px #1E252C, 0 30px 60px -20px rgba(23, 32, 43, .55);
+    display: flex;
+    flex-direction: column;
+  }
+  @media (max-width: 480px) {
+    body { place-items: stretch; background: var(--paper); }
+    .device { width: 100%; height: 100dvh; border-radius: 0; box-shadow: none; }
+  }
+
+  /* Top bar: server / project / session (plan §10) */
+  .topbar {
+    background: var(--sheet);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 16px 12px;
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
+    gap: 4px;
+    align-items: center;
+  }
+  .icon-btn {
+    width: 48px; height: 48px;
+    border: 0; background: transparent; border-radius: 24px;
+    display: grid; place-items: center; color: var(--ink); cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--paper); }
+  .title { min-width: 0; }
+  .title h1 {
+    margin: 0; font-size: 17px; line-height: 22px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .where {
+    margin: 2px 0 0; font-size: 13px; color: var(--slate);
+    display: flex; gap: 6px; align-items: center; min-width: 0;
+  }
+  .where code { font-family: var(--code); font-size: 12px; color: var(--ink); }
+  .dot { width: 8px; height: 8px; border-radius: 4px; background: var(--add); flex: none; }
+
+  /* Trạng thái agent tách riêng khỏi trạng thái gửi prompt (plan §9) */
+  .status {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px;
+    background: var(--agent-soft);
+    color: var(--agent);
+    font-size: 14px; font-weight: 500;
+  }
+  .status .pulse {
+    width: 10px; height: 10px; border-radius: 5px; background: var(--agent);
+  }
+  .status .elapsed { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--slate); font-weight: 400; }
+
+  /* Luồng hội thoại */
+  .thread {
+    flex: 1; overflow-y: auto;
+    padding: 16px 16px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .day { align-self: center; font-size: 12px; color: var(--slate); }
+  .you {
+    align-self: flex-end; max-width: 85%;
+    background: var(--ink); color: #F2F4F1;
+    padding: 10px 14px; border-radius: 18px 18px 4px 18px;
+    font-size: 15px; line-height: 22px;
+  }
+  .you .meta { display: block; margin-top: 4px; font-size: 12px; color: #A9B4BF; text-align: right; }
+  .agent-turn { display: flex; flex-direction: column; gap: 8px; }
+  .agent-turn p { margin: 0; font-size: 15px; line-height: 23px; max-width: 34em; }
+  .agent-turn code { font-family: var(--code); font-size: 13px; background: var(--sheet); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+
+  details.reasoning {
+    border-left: 2px solid var(--line);
+    padding-left: 12px;
+    color: var(--slate); font-size: 14px; line-height: 21px;
+  }
+  details.reasoning summary { cursor: pointer; list-style: none; font-weight: 500; }
+  details.reasoning summary::-webkit-details-marker { display: none; }
+  details.reasoning summary::before { content: "▸ "; }
+  details.reasoning[open] summary::before { content: "▾ "; }
+  details.reasoning p { margin: 6px 0 0; font-size: 14px; color: var(--slate); }
+
+  /* Tool trace: mỗi bước là một dòng, không phải một card */
+  .tools { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .tools li {
+    display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: baseline;
+    padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 14px;
+  }
+  .tools li:last-child { border-bottom: 0; }
+  .tools .glyph { font-size: 14px; text-align: center; }
+  .tools .ok { color: var(--add); }
+  .tools .wait { color: var(--signal); }
+  .tools .path { font-family: var(--code); font-size: 12.5px; overflow-wrap: anywhere; }
+  .tools .dur { font-size: 12px; color: var(--slate); font-variant-numeric: tabular-nums; }
+
+  /* Diff: giới hạn hiển thị, có "xem thêm" (plan §10) */
+  .diff { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .diff header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px;
+  }
+  .diff header .file { font-family: var(--code); font-size: 12px; }
+  .diff header .count { color: var(--slate); font-variant-numeric: tabular-nums; }
+  .diff header .count b { font-weight: 600; }
+  .diff header .count .a { color: var(--add); }
+  .diff header .count .d { color: var(--del); }
+  .diff pre { margin: 0; font-family: var(--code); font-size: 12px; line-height: 19px; overflow-x: auto; }
+  .diff pre span { display: block; padding: 0 12px; white-space: pre; }
+  .diff .ctx { color: var(--slate); }
+  .diff .add { background: var(--add-soft); color: #1F5A3E; }
+  .diff .del { background: var(--del-soft); color: #86302A; }
+  .diff .more-lines { display: none; }
+  .diff.expanded .more-lines { display: block; }
+  .diff button.more {
+    width: 100%; border: 0; border-top: 1px solid var(--line); background: var(--sheet);
+    min-height: 48px; padding: 10px; font: 500 13px var(--ui); color: var(--agent); cursor: pointer;
+  }
+
+  /* Composer: gửi và dừng agent */
+  .composer {
+    background: var(--sheet); border-top: 1px solid var(--line);
+    padding: 10px 12px 18px; display: flex; gap: 8px; align-items: flex-end;
+  }
+  .composer label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  .composer textarea {
+    flex: 1; resize: none; border: 1px solid var(--line); border-radius: 20px;
+    padding: 10px 14px; font: 15px/20px var(--ui); color: var(--ink); background: var(--paper); min-height: 42px;
+  }
+  .stop {
+    height: 48px; padding: 0 16px; border-radius: 24px; border: 1.5px solid var(--del);
+    background: var(--sheet); color: var(--del); font: 600 14px var(--ui); cursor: pointer;
+  }
+
+  /* Điểm nhấn: permission sheet */
+  .scrim { position: absolute; inset: 0; background: rgba(23, 32, 43, .38); }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--sheet); border-radius: 24px 24px 0 0;
+    padding: 10px 20px 24px;
+    box-shadow: 0 -12px 30px -12px rgba(23, 32, 43, .4);
+    animation: rise .38s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  @keyframes rise { from { transform: translateY(100%); } to { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
+  .grip { width: 36px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 16px; }
+  .sheet h2 { margin: 0; font-size: 20px; line-height: 26px; font-weight: 600; }
+  .sheet .why { margin: 6px 0 16px; font-size: 14px; line-height: 21px; color: var(--slate); }
+  .command {
+    background: var(--ink); color: #F2F4F1; border-radius: 14px;
+    padding: 18px 16px; margin: 0 0 8px;
+    font-family: var(--code); font-size: 19px; line-height: 27px; font-weight: 600;
+    overflow-wrap: anywhere;
+    border-left: 6px solid var(--signal);
+  }
+  .command .prompt-sign { color: var(--signal); margin-right: 8px; }
+  .scope { margin: 0 0 18px; font-size: 13px; color: var(--slate); }
+  .scope code { font-family: var(--code); font-size: 12px; color: var(--ink); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .actions button {
+    height: 48px; border-radius: 12px; font: 600 15px var(--ui); cursor: pointer;
+  }
+  .allow-once { grid-column: 1 / -1; border: 0; background: var(--agent); color: #fff; }
+  .allow-always { border: 1.5px solid var(--line); background: var(--sheet); color: var(--ink); }
+  .reject { border: 1.5px solid var(--del); background: var(--sheet); color: var(--del); }
+
+  .toast {
+    position: absolute; left: 16px; right: 16px; bottom: 92px;
+    background: var(--ink); color: #F2F4F1; padding: 12px 16px; border-radius: 12px;
+    font-size: 14px; display: none;
+  }
+  .toast.show { display: block; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main class="device" aria-label="Màn hình OpenCode chat">
+  <header class="topbar">
+    <button class="icon-btn" type="button" aria-label="Quay lại danh sách session">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">
+      <h1>Sửa lỗi reconnect SSE</h1>
+      <p class="where"><span class="dot" aria-hidden="true"></span><span>Máy công ty</span><code>~/src/adroidClient</code></p>
+    </div>
+    <button class="icon-btn" type="button" aria-label="Xem diff của session">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3v12M18 9v12M6 21a3 3 0 100-6 3 3 0 000 6zM18 9a3 3 0 100-6 3 3 0 000 6zM6 15c0-5 12-1 12-6"/></svg>
+    </button>
+  </header>
+
+  <div class="status" role="status" id="agent-status">
+    <span class="pulse" aria-hidden="true"></span>
+    <span id="status-text">Agent đang chờ bạn cho phép chạy lệnh</span>
+    <span class="elapsed">2:14</span>
+  </div>
+
+  <section class="thread" aria-label="Lịch sử hội thoại">
+    <span class="day">Hôm nay, 14:02</span>
+
+    <div class="you">
+      App mất kết nối khi chuyển sang nền rồi mở lại thì không tự đồng bộ. Tìm nguyên nhân và sửa giúp mình.
+      <span class="meta">Đã gửi</span>
+    </div>
+
+    <div class="agent-turn">
+      <details class="reasoning">
+        <summary>Suy luận (18 giây)</summary>
+        <p>Khi app vào nền, SSE bị đóng nhưng generation cũ vẫn giữ callback. Lúc quay lại foreground, snapshot mới bị ghi đè bởi event trễ của kết nối cũ.</p>
+      </details>
+
+      <ul class="tools" aria-label="Các bước agent đã chạy">
+        <li><span class="glyph ok" aria-label="Xong">✓</span><span>Đọc <span class="path">OpenCodeSyncCoordinator.kt</span></span><span class="dur">0,4s</span></li>
+        <li><span class="glyph ok" aria-label="Xong">✓</span><span>Tìm <span class="path">connectionGeneration</span> trong 6 file</span><span class="dur">1,1s</span></li>
+        <li><span class="glyph ok" aria-label="Xong">✓</span><span>Sửa <span class="path">OpenCodeSyncCoordinator.kt</span></span><span class="dur">2,0s</span></li>
+        <li id="test-step"><span class="glyph wait" aria-label="Đang chờ">●</span><span>Chạy unit test</span><span class="dur">chờ duyệt</span></li>
+      </ul>
+
+      <p>Mình đã thêm kiểm tra generation trước khi ghi event vào Room. Event đến từ kết nối cũ giờ bị bỏ qua.</p>
+
+      <article class="diff" id="diff" aria-label="Thay đổi trong OpenCodeSyncCoordinator.kt">
+        <header>
+          <span class="file">OpenCodeSyncCoordinator.kt</span>
+          <span class="count"><b class="a">+8</b> <b class="d">−2</b></span>
+        </header>
+        <pre><span class="ctx">  suspend fun onEvent(event: SseEvent) {</span><span class="del">-     reducer.apply(event)</span><span class="add">+     if (event.generation != current) {</span><span class="add">+         log.d("drop stale event")</span><span class="add">+         return</span><span class="add">+     }</span><span class="add">+     reducer.apply(event)</span><span class="more-lines ctx">  }</span><span class="more-lines ctx"> </span><span class="more-lines ctx">  fun onForeground() {</span><span class="more-lines del">-     connect()</span><span class="more-lines add">+     current = generation.incrementAndGet()</span><span class="more-lines add">+     connect(current)</span><span class="more-lines add">+     reconcile(current)</span><span class="more-lines ctx">  }</span></pre>
+        <button class="more" type="button" id="more" aria-expanded="false" aria-controls="diff">Xem thêm 8 dòng</button>
+      </article>
+    </div>
+  </section>
+
+  <form class="composer" onsubmit="return false">
+    <label for="prompt">Nhắn cho agent</label>
+    <textarea id="prompt" rows="1" placeholder="Nhắn cho agent…"></textarea>
+    <button class="stop" type="button">Dừng agent</button>
+  </form>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div id="permission">
+    <div class="scrim" aria-hidden="true"></div>
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="perm-title" aria-describedby="perm-why">
+      <div class="grip" aria-hidden="true"></div>
+      <h2 id="perm-title">Agent muốn chạy lệnh này</h2>
+      <p class="why" id="perm-why">Để kiểm tra bản sửa. Lệnh chạy trên máy công ty, không phải trên điện thoại.</p>
+      <p class="command"><span class="prompt-sign" aria-hidden="true">$</span>./gradlew testDebugUnitTest</p>
+      <p class="scope">Thư mục <code>~/src/adroidClient</code></p>
+      <div class="actions">
+        <button class="allow-once" type="button" data-result="Đã cho phép lần này. Agent đang chạy test.">Cho phép lần này</button>
+        <button class="allow-always" type="button" data-result="Đã luôn cho phép lệnh này trong project.">Luôn cho phép</button>
+        <button class="reject" type="button" data-result="Đã từ chối. Agent sẽ dừng bước này.">Từ chối</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  const more = document.getElementById('more');
+  const diff = document.getElementById('diff');
+  more.addEventListener('click', () => {
+    const open = diff.classList.toggle('expanded');
+    more.setAttribute('aria-expanded', String(open));
+    more.textContent = open ? 'Thu gọn' : 'Xem thêm 8 dòng';
+  });
+
+  const permission = document.getElementById('permission');
+  const toast = document.getElementById('toast');
+  const statusText = document.getElementById('status-text');
+  permission.querySelectorAll('button[data-result]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      permission.hidden = true;
+      toast.textContent = btn.dataset.result;
+      toast.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => toast.classList.remove('show'), 4000);
+      const rejected = btn.classList.contains('reject');
+      statusText.textContent = rejected ? 'Agent đã dừng bước chạy test' : 'Agent đang chạy unit test';
+      document.querySelector('#test-step .dur').textContent = rejected ? 'đã từ chối' : 'đang chạy';
+      document.getElementById('prompt').focus();
+    });
+  });
+  permission.querySelector('.allow-once').focus();
+</script>
+</body>
+</html>
