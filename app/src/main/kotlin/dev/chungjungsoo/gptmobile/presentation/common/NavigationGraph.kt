@@ -17,6 +17,7 @@ import androidx.navigation.navigation
 import dev.chungjungsoo.gptmobile.data.model.ApiType
 import dev.chungjungsoo.gptmobile.presentation.ui.chat.ChatScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.home.HomeScreen
+import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeBrowseScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerEditScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerListScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.AboutScreen
@@ -60,10 +61,12 @@ fun NavGraphBuilder.startScreenNavigation(navController: NavHostController) {
 }
 
 fun NavGraphBuilder.openCodeNavigation(navController: NavHostController) {
+    composable(Route.OPEN_CODE_BROWSE) { OpenCodeBrowseScreen(onBack = { navController.navigateUp() }) }
     composable(Route.OPEN_CODE_SERVERS) {
         OpenCodeServerListScreen(
             onBack = { navController.navigateUp() },
-            onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) }
+            onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) },
+            onBrowse = { id -> navController.navigate(Route.OPEN_CODE_BROWSE.replace("{serverId}", android.net.Uri.encode(id))) }
         )
     }
     composable(Route.OPEN_CODE_SERVER_EDIT, arguments = listOf(navArgument("serverId") { defaultValue = "new" })) {
@@ -291,7 +294,8 @@ fun NavGraphBuilder.settingNavigation(navController: NavHostController) {
         composable(Route.OPEN_CODE_SERVERS_SETTINGS) {
             OpenCodeServerListScreen(
                 onBack = { navController.navigateUp() },
-                onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) }
+                onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) },
+                onBrowse = { id -> navController.navigate(Route.OPEN_CODE_BROWSE.replace("{serverId}", android.net.Uri.encode(id))) }
             )
         }
     }

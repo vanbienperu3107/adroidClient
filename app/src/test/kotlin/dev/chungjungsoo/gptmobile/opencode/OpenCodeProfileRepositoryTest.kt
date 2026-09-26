@@ -22,6 +22,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OpenCodeProfileRepositoryTest {
+    @Test
+    fun cacheCommitIsRejectedAfterProfileEditOrDelete() = runBlocking {
+        val profile = repository.save(null, "A", "https://a.test", credential)
+        repository.save(profile.serverId, "B", profile.baseUrl, null)
+        var writes = 0
+        assertTrue(!repository.withCurrentProfile(profile) { writes++ })
+        val current = repository.profiles().single()
+        assertTrue(repository.withCurrentProfile(current) { writes++ })
+        repository.delete(current.serverId)
+        assertTrue(!repository.withCurrentProfile(current) { writes++ })
+        assertEquals(1, writes)
+    }
     private class MemoryStore : DataStore<Preferences> {
         override val data = MutableStateFlow(emptyPreferences())
         private val lock = Mutex()

@@ -17,8 +17,8 @@ android {
         applicationId = "dev.chungjungsoo.gptmobile"
         minSdk = 28
         targetSdk = 34
-        versionCode = 13
-        versionName = "1.0.0"
+        versionCode = 14
+        versionName = "1.1.0-rc.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -123,6 +123,10 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 aboutLibraries {
