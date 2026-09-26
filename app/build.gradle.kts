@@ -17,8 +17,8 @@ android {
         applicationId = "dev.chungjungsoo.gptmobile"
         minSdk = 28
         targetSdk = 34
-        versionCode = 13
-        versionName = "1.0.0"
+        versionCode = 15
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -63,6 +63,7 @@ dependencies {
     // Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.viewmodel)
@@ -91,6 +92,7 @@ dependencies {
     implementation(libs.ktor.engine)
     implementation(libs.ktor.logging)
     implementation(libs.ktor.serialization)
+    implementation(libs.okhttp)
 
     // License page UI
     implementation(libs.auto.license.core)
@@ -122,6 +124,10 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 aboutLibraries {

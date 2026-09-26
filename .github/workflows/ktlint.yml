@@ -1,7 +1,7 @@
 name: Kotlin Lint Check
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - "main"
     paths-ignore:
@@ -22,13 +22,12 @@ jobs:
     steps:
       - name: Clone repo
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Run ktlint
-        uses: ScaCap/action-ktlint@master
-        with:
-          filter_mode: file
-          github_token: ${{ secrets.github_token }}
-          reporter: github-check
+        env:
+          KTLINT_SHA256: a16be01dcc480aab2f55f444b620142152f66e31564b3b9376506d624c28a2ad
+        run: |
+          curl --fail --location --silent --show-error --output ktlint "https://github.com/pinterest/ktlint/releases/download/1.5.0/ktlint"
+          echo "$KTLINT_SHA256  ktlint" | sha256sum --check --status
+          chmod +x ktlint
+          ./ktlint "app/src/**/*.kt" "app/src/**/*.kts"

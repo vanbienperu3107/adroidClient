@@ -9,7 +9,7 @@ import dev.chungjungsoo.gptmobile.data.database.entity.APITypeConverter
 import dev.chungjungsoo.gptmobile.data.database.entity.ChatRoom
 import dev.chungjungsoo.gptmobile.data.database.entity.Message
 
-@Database(entities = [ChatRoom::class, Message::class], version = 1)
+@Database(entities = [ChatRoom::class, Message::class], version = 2, exportSchema = false)
 @TypeConverters(APITypeConverter::class)
 abstract class ChatDatabase : RoomDatabase() {
 

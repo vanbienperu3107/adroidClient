@@ -50,6 +50,7 @@ fun SettingScreen(
     modifier: Modifier = Modifier,
     settingViewModel: SettingViewModel = hiltViewModel(),
     onNavigationClick: () -> Unit,
+    onNavigateToOpenCode: () -> Unit,
     onNavigateToPlatformSetting: (ApiType) -> Unit,
     onNavigateToAboutPage: () -> Unit
 ) {
@@ -84,6 +85,13 @@ fun SettingScreen(
                     showLeadingIcon = false
                 )
             }
+            SettingItem(
+                title = "OpenCode servers",
+                description = "Connect to an OpenCode server",
+                onItemClick = onNavigateToOpenCode,
+                showTrailingIcon = true,
+                showLeadingIcon = false
+            )
             AboutPageItem(onItemClick = onNavigateToAboutPage)
 
             if (dialogState.isThemeDialogOpen) {

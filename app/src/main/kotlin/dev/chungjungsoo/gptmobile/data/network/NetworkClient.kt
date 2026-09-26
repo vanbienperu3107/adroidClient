@@ -43,8 +43,8 @@ class NetworkClient @Inject constructor(
 
             install(Logging) {
                 logger = Logger.DEFAULT
-                level = LogLevel.ALL
-                sanitizeHeader { header -> header == HttpHeaders.Authorization }
+                level = LogLevel.NONE
+                sanitizeHeader { header -> header.equals(HttpHeaders.Authorization, true) || header.equals(HttpHeaders.Cookie, true) || header.equals(HttpHeaders.SetCookie, true) }
             }
 
             install(DefaultRequest) {

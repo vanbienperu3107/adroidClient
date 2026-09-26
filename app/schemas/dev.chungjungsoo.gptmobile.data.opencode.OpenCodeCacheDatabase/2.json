@@ -1,0 +1,376 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "3339119e52bd1305b553fce7d2da1cc6",
+    "entities": [
+      {
+        "tableName": "opencode_session_cache",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`serverId` TEXT NOT NULL, `directory` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `profileRevision` INTEGER NOT NULL, `title` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, `status` TEXT NOT NULL, `fetchedAt` INTEGER NOT NULL, PRIMARY KEY(`serverId`, `directory`, `sessionId`))",
+        "fields": [
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "directory",
+            "columnName": "directory",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileRevision",
+            "columnName": "profileRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetchedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "serverId",
+            "directory",
+            "sessionId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "opencode_projects",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`serverId` TEXT NOT NULL, `directory` TEXT NOT NULL, `remoteId` TEXT NOT NULL, `profileRevision` INTEGER NOT NULL, PRIMARY KEY(`serverId`, `directory`))",
+        "fields": [
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "directory",
+            "columnName": "directory",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remoteId",
+            "columnName": "remoteId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileRevision",
+            "columnName": "profileRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "serverId",
+            "directory"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "opencode_messages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`serverId` TEXT NOT NULL, `directory` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `messageId` TEXT NOT NULL, `profileRevision` INTEGER NOT NULL, `role` TEXT NOT NULL, `position` INTEGER NOT NULL, PRIMARY KEY(`serverId`, `directory`, `sessionId`, `messageId`))",
+        "fields": [
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "directory",
+            "columnName": "directory",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileRevision",
+            "columnName": "profileRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "serverId",
+            "directory",
+            "sessionId",
+            "messageId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "opencode_parts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`serverId` TEXT NOT NULL, `directory` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `messageId` TEXT NOT NULL, `partId` TEXT NOT NULL, `type` TEXT NOT NULL, `text` TEXT, `position` INTEGER NOT NULL, PRIMARY KEY(`serverId`, `directory`, `sessionId`, `messageId`, `partId`), FOREIGN KEY(`serverId`, `directory`, `sessionId`, `messageId`) REFERENCES `opencode_messages`(`serverId`, `directory`, `sessionId`, `messageId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "directory",
+            "columnName": "directory",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "partId",
+            "columnName": "partId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "serverId",
+            "directory",
+            "sessionId",
+            "messageId",
+            "partId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_opencode_parts_serverId_directory_sessionId_messageId",
+            "unique": false,
+            "columnNames": [
+              "serverId",
+              "directory",
+              "sessionId",
+              "messageId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_opencode_parts_serverId_directory_sessionId_messageId` ON `${TABLE_NAME}` (`serverId`, `directory`, `sessionId`, `messageId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "opencode_messages",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "serverId",
+              "directory",
+              "sessionId",
+              "messageId"
+            ],
+            "referencedColumns": [
+              "serverId",
+              "directory",
+              "sessionId",
+              "messageId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "opencode_access",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`serverId` TEXT NOT NULL, `revision` INTEGER NOT NULL, `denied` INTEGER NOT NULL, PRIMARY KEY(`serverId`))",
+        "fields": [
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "denied",
+            "columnName": "denied",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "serverId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "opencode_pending_prompts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`serverId` TEXT NOT NULL, `directory` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `clientMessageId` TEXT NOT NULL, `profileRevision` INTEGER NOT NULL, `content` TEXT NOT NULL, `state` TEXT NOT NULL, `uncertainty` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`serverId`, `directory`, `sessionId`, `clientMessageId`))",
+        "fields": [
+          {
+            "fieldPath": "serverId",
+            "columnName": "serverId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "directory",
+            "columnName": "directory",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientMessageId",
+            "columnName": "clientMessageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileRevision",
+            "columnName": "profileRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uncertainty",
+            "columnName": "uncertainty",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "serverId",
+            "directory",
+            "sessionId",
+            "clientMessageId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3339119e52bd1305b553fce7d2da1cc6')"
+    ]
+  }
+}

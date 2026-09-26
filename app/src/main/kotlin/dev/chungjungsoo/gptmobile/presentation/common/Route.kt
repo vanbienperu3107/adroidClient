@@ -25,4 +25,9 @@ object Route {
     const val OLLAMA_SETTINGS = "ollama_settings"
     const val ABOUT_PAGE = "about"
     const val LICENSE = "license"
+
+    const val OPEN_CODE_SERVERS = "opencode_servers"
+    const val OPEN_CODE_BROWSE = "opencode_browse/{serverId}"
+    const val OPEN_CODE_SERVERS_SETTINGS = "opencode_servers_settings"
+    const val OPEN_CODE_SERVER_EDIT = "opencode_server_edit?serverId={serverId}"
 }
