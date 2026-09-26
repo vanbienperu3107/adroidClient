@@ -61,6 +61,7 @@ class OpenCodeReadApiTest {
         val client = OkHttpClient.Builder().addInterceptor {
             assertEquals("POST", it.request().method)
             assertEquals("/prefix/session/ses_test/prompt_async", it.request().url.encodedPath)
+            assertEquals("/Project", it.request().url.queryParameter("directory"))
             Response.Builder().request(it.request()).protocol(Protocol.HTTP_1_1).code(204).message("accepted").build()
         }.build()
         assertEquals(
