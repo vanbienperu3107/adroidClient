@@ -212,7 +212,7 @@ class OpenCodeBrowseRepository(
         val p = profile(serverId) ?: return@withLock "Reauthentication required"
         if (request.serverId != serverId || request.directory != directory || request.sessionId != session || request.state != "PENDING" || !owned(p, directory, session)) return@withLock "Request is no longer actionable; refresh"
         val segments = if (request.kind == "permission") listOf("permission", request.requestId, "reply") else listOf("question", request.requestId, if (reply == "reject") "reject" else "reply")
-        val payload = if (request.kind == "permission") buildJsonObject { put("reply", reply) }.toString() else buildJsonObject { put("answers", kotlinx.serialization.json.buildJsonArray { answers.forEach { selected -> add(kotlinx.serialization.json.buildJsonArray { selected.forEach { add(it) } }) } }) }.toString()
+        val payload = if (request.kind == "permission") buildJsonObject { put("reply", reply) }.toString() else buildJsonObject { put("answers", kotlinx.serialization.json.buildJsonArray { answers.forEach { selected -> add(kotlinx.serialization.json.buildJsonArray { selected.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } }) } }) }.toString()
         dao.updateInteraction(serverId, directory, session, request.requestId, "SUBMITTING")
         val result = api.post(p, segments, directory, payload, 200)
         if (observeAuth(p, result)) return@withLock "Reauthentication required"
