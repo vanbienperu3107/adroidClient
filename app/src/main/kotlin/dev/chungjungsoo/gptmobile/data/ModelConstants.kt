@@ -15,6 +15,7 @@ object ModelConstants {
 
     fun getDefaultAPIUrl(apiType: ApiType) = when (apiType) {
         ApiType.OPENAI -> OPENAI_API_URL
+        ApiType.CLIPROXY -> ""
         ApiType.ANTHROPIC -> ANTHROPIC_API_URL
         ApiType.GOOGLE -> GOOGLE_API_URL
         ApiType.OLLAMA -> ""

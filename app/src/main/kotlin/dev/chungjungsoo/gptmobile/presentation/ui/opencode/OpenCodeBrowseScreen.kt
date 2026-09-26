@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
@@ -35,12 +36,17 @@ import dev.chungjungsoo.gptmobile.util.collectManagedState
 fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel = hiltViewModel()) {
     val data by viewModel.data.collectManagedState()
     val loading by viewModel.loading.collectManagedState()
+    val models by viewModel.models.collectManagedState()
+    val selectedModel by viewModel.selectedModel.collectManagedState()
+    val selectedVariant by viewModel.selectedVariant.collectManagedState()
     var mutation by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var title by remember { mutableStateOf("") }
     var pendingInfo by remember { mutableStateOf(false) }
     var prompt by remember { mutableStateOf("") }
     var interaction by remember { mutableStateOf<CachedOpenCodeInteraction?>(null) }
     var answer by remember { mutableStateOf("") }
+    var showModelPicker by remember { mutableStateOf(false) }
+    var showVariantPicker by remember { mutableStateOf(false) }
     val back = { if (!viewModel.up()) onBack() }
     BackHandler(onBack = back)
     mutation?.let { (id, deleting) ->
@@ -102,6 +108,46 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
                 }
             },
             dismissButton = { TextButton(onClick = { interaction = null }) { Text("Cancel") } }
+        )
+    }
+    if (showModelPicker) {
+        AlertDialog(
+            onDismissRequest = { showModelPicker = false },
+            title = { Text("Choose model") },
+            text = {
+                Column {
+                    if (models.isEmpty()) Text("No server models loaded.")
+                    models.forEach { model ->
+                        TextButton(onClick = {
+                            viewModel.selectModel(model, null)
+                            showModelPicker = false
+                        }) { Text(model.name) }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { viewModel.loadModels() }) { Text("Refresh") } }
+        )
+    }
+    if (showVariantPicker) {
+        AlertDialog(
+            onDismissRequest = { showVariantPicker = false },
+            title = { Text("Reasoning level") },
+            text = {
+                Column {
+                    val model = selectedModel
+                    if (model == null || model.variants.isEmpty()) {
+                        Text("Server default")
+                    } else {
+                        model.variants.forEach { variant ->
+                            TextButton(onClick = {
+                                viewModel.selectModel(model, variant)
+                                showVariantPicker = false
+                            }) { Text(if (variant == selectedVariant) "✓ $variant" else variant) }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showVariantPicker = false }) { Text("Cancel") } }
         )
     }
     Scaffold(topBar = {
@@ -174,6 +220,13 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
                         }) { Text("Send") }
                         TextButton(enabled = !loading && !data.stale, onClick = viewModel::abort) { Text("Stop agent") }
                         TextButton(enabled = !loading && !data.stale, onClick = viewModel::diff) { Text("View diff") }
+                    }
+                    Row {
+                        AssistChip(onClick = {
+                            viewModel.loadModels()
+                            showModelPicker = true
+                        }, label = { Text(selectedModel?.name ?: "Choose model") })
+                        AssistChip(onClick = { showVariantPicker = true }, label = { Text(selectedVariant ?: "Server default") })
                     }
                 }
             }

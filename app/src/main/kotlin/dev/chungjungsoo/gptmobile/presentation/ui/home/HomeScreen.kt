@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -76,7 +77,9 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = hiltViewModel(),
     settingOnClick: () -> Unit,
     onExistingChatClick: (ChatRoom) -> Unit,
-    navigateToNewChat: (enabledPlatforms: List<ApiType>) -> Unit
+    navigateToNewChat: (enabledPlatforms: List<ApiType>) -> Unit,
+    onOpenCodeSession: (serverId: String, directory: String, sessionId: String) -> Unit,
+    onOpenCodeSetup: () -> Unit
 ) {
     val platformTitles = getPlatformTitleResources()
     val listState = rememberLazyListState()
@@ -85,6 +88,7 @@ fun HomeScreen(
     val showSelectModelDialog by homeViewModel.showSelectModelDialog.collectManagedState()
     val showDeleteWarningDialog by homeViewModel.showDeleteWarningDialog.collectManagedState()
     val platformState by homeViewModel.platformState.collectManagedState()
+    val openCodeState by homeViewModel.openCodeState.collectManagedState()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectManagedState()
     val context = LocalContext.current
@@ -93,6 +97,12 @@ fun HomeScreen(
         if (lifecycleState == Lifecycle.State.RESUMED && !chatListState.isSelectionMode) {
             homeViewModel.fetchChats()
             homeViewModel.fetchPlatformStatus()
+            homeViewModel.fetchOpenCodeSessions()
+        }
+    }
+    LaunchedEffect(Unit) {
+        homeViewModel.openCodeNavigation.collect { (server, directory, session) ->
+            onOpenCodeSession(server, directory, session)
         }
     }
 
@@ -137,6 +147,62 @@ fun HomeScreen(
             state = listState
         ) {
             item { ChatsTitle(scrollBehavior) }
+            item {
+                Text(
+                    text = "OpenCode sessions",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                )
+            }
+            if (openCodeState.serverId == null) {
+                item {
+                    TextButton(onClick = onOpenCodeSetup, modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Text("Connect OpenCode to see workspace sessions")
+                    }
+                }
+            } else {
+                item {
+                    Text(
+                        text = openCodeState.directory ?: "Workspace unavailable",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                }
+                openCodeState.error?.let { error ->
+                    item { Text(error, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) }
+                }
+                items(items = openCodeState.sessions, key = { it.sessionId }) { session ->
+                    ListItem(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable(onClick = {
+                                val directory = openCodeState.directory ?: return@combinedClickable
+                                val server = openCodeState.serverId ?: return@combinedClickable
+                                onOpenCodeSession(server, directory, session.sessionId)
+                            })
+                            .padding(horizontal = 8.dp),
+                        headlineContent = { Text(session.title) },
+                        supportingContent = { Text("OpenCode · ${session.status}") },
+                        leadingContent = {
+                            Icon(ImageVector.vectorResource(id = R.drawable.ic_rounded_chat), contentDescription = "OpenCode session")
+                        }
+                    )
+                }
+                if (openCodeState.stale) item { Text("Showing cached OpenCode sessions", modifier = Modifier.padding(horizontal = 24.dp)) }
+                item {
+                    TextButton(onClick = homeViewModel::createOpenCodeSession, modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Text("+ New OpenCode session")
+                    }
+                }
+            }
+            item {
+                HorizontalDivider(Modifier.padding(horizontal = 24.dp, vertical = 16.dp))
+                Text(
+                    text = "Direct provider chats",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                )
+            }
             itemsIndexed(chatListState.chats, key = { _, it -> it.id }) { idx, chatRoom ->
                 val usingPlatform = chatRoom.enabledPlatform.joinToString(", ") { platformTitles[it] ?: "" }
                 ListItem(

@@ -151,6 +151,7 @@ class SetupViewModel @Inject constructor(private val settingRepository: SettingR
     fun setDefaultModel(apiType: ApiType, defaultModelIndex: Int): String {
         val modelList = when (apiType) {
             ApiType.OPENAI -> openaiModels
+            ApiType.CLIPROXY -> linkedSetOf()
             ApiType.ANTHROPIC -> anthropicModels
             ApiType.GOOGLE -> googleModels
             ApiType.OLLAMA -> ollamaModels

@@ -11,6 +11,7 @@ import dev.chungjungsoo.gptmobile.data.model.ThemeMode
 @Composable
 fun getPlatformTitleResources(): Map<ApiType, String> = mapOf(
     ApiType.OPENAI to stringResource(R.string.openai),
+    ApiType.CLIPROXY to "Cliproxy",
     ApiType.ANTHROPIC to stringResource(R.string.anthropic),
     ApiType.GOOGLE to stringResource(R.string.google),
     ApiType.OLLAMA to stringResource(R.string.ollama)
@@ -19,6 +20,7 @@ fun getPlatformTitleResources(): Map<ApiType, String> = mapOf(
 @Composable
 fun getPlatformDescriptionResources(): Map<ApiType, String> = mapOf(
     ApiType.OPENAI to stringResource(R.string.openai_description),
+    ApiType.CLIPROXY to "Direct chat with your Cliproxy account.",
     ApiType.ANTHROPIC to stringResource(R.string.anthropic_description),
     ApiType.GOOGLE to stringResource(R.string.google_description),
     ApiType.OLLAMA to stringResource(R.string.ollama_description)
@@ -78,6 +80,7 @@ fun generateGoogleModelList(models: LinkedHashSet<String>) = models.mapIndexed {
 @Composable
 fun getAPIModelSelectTitle(apiType: ApiType) = when (apiType) {
     ApiType.OPENAI -> stringResource(R.string.select_openai_model)
+    ApiType.CLIPROXY -> "Choose Cliproxy model in settings"
     ApiType.ANTHROPIC -> stringResource(R.string.select_anthropic_model)
     ApiType.GOOGLE -> stringResource(R.string.select_google_model)
     ApiType.OLLAMA -> stringResource(R.string.select_ollama_model)
@@ -86,6 +89,7 @@ fun getAPIModelSelectTitle(apiType: ApiType) = when (apiType) {
 @Composable
 fun getAPIModelSelectDescription(apiType: ApiType) = when (apiType) {
     ApiType.OPENAI -> stringResource(R.string.select_openai_model_description)
+    ApiType.CLIPROXY -> "Configure models in Cliproxy settings."
     ApiType.ANTHROPIC -> stringResource(R.string.select_anthropic_model_description)
     ApiType.GOOGLE -> stringResource(R.string.select_google_model_description)
     ApiType.OLLAMA -> stringResource(id = R.string.select_ollama_model_description)
@@ -107,6 +111,7 @@ fun getThemeModeTitle(theme: ThemeMode) = when (theme) {
 @Composable
 fun getPlatformSettingTitle(apiType: ApiType) = when (apiType) {
     ApiType.OPENAI -> stringResource(R.string.openai_setting)
+    ApiType.CLIPROXY -> "Cliproxy"
     ApiType.ANTHROPIC -> stringResource(R.string.anthropic_setting)
     ApiType.GOOGLE -> stringResource(R.string.google_setting)
     ApiType.OLLAMA -> stringResource(R.string.ollama_setting)
@@ -115,6 +120,7 @@ fun getPlatformSettingTitle(apiType: ApiType) = when (apiType) {
 @Composable
 fun getPlatformSettingDescription(apiType: ApiType) = when (apiType) {
     ApiType.OPENAI -> stringResource(R.string.platform_setting_description)
+    ApiType.CLIPROXY -> "Direct chat and model catalog"
     ApiType.ANTHROPIC -> stringResource(R.string.platform_setting_description)
     ApiType.GOOGLE -> stringResource(R.string.platform_setting_description)
     ApiType.OLLAMA -> stringResource(R.string.platform_setting_description)
@@ -123,6 +129,7 @@ fun getPlatformSettingDescription(apiType: ApiType) = when (apiType) {
 @Composable
 fun getPlatformAPIBrandText(apiType: ApiType) = when (apiType) {
     ApiType.OPENAI -> stringResource(R.string.openai_brand_text)
+    ApiType.CLIPROXY -> "Powered by Cliproxy"
     ApiType.ANTHROPIC -> stringResource(R.string.anthropic_brand_text)
     ApiType.GOOGLE -> stringResource(R.string.google_brand_text)
     ApiType.OLLAMA -> stringResource(R.string.ollama_brand_text)

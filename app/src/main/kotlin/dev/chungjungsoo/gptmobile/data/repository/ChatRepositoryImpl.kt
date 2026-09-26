@@ -16,6 +16,7 @@ import com.google.ai.client.generativeai.type.SafetySetting
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import dev.chungjungsoo.gptmobile.data.ModelConstants
+import dev.chungjungsoo.gptmobile.data.cliproxy.CliproxyDirectRepository
 import dev.chungjungsoo.gptmobile.data.database.dao.ChatRoomDao
 import dev.chungjungsoo.gptmobile.data.database.dao.MessageDao
 import dev.chungjungsoo.gptmobile.data.database.entity.ChatRoom
@@ -41,12 +42,14 @@ class ChatRepositoryImpl @Inject constructor(
     private val chatRoomDao: ChatRoomDao,
     private val messageDao: MessageDao,
     private val settingRepository: SettingRepository,
-    private val anthropic: AnthropicAPI
+    private val anthropic: AnthropicAPI,
+    private val cliproxy: CliproxyDirectRepository
 ) : ChatRepository {
 
     private lateinit var openAI: OpenAI
     private lateinit var google: GenerativeModel
     private lateinit var ollama: OpenAI
+    private lateinit var cliproxyClient: OpenAI
 
     override suspend fun completeOpenAIChat(question: Message, history: List<Message>): Flow<ApiState> {
         val platform = checkNotNull(settingRepository.fetchPlatforms().firstOrNull { it.name == ApiType.OPENAI })
@@ -66,6 +69,24 @@ class ChatRepositoryImpl @Inject constructor(
         return openAI.chatCompletions(chatCompletionRequest)
             .map<ChatCompletionChunk, ApiState> { chunk -> ApiState.Success(chunk.choices[0].delta?.content ?: "") }
             .catch { throwable -> emit(ApiState.Error(throwable.message ?: "Unknown error")) }
+            .onStart { emit(ApiState.Loading) }
+            .onCompletion { emit(ApiState.Done) }
+    }
+
+    override suspend fun completeCliproxyChat(question: Message, history: List<Message>): Flow<ApiState> {
+        val config = cliproxy.config()
+        val key = cliproxy.apiKey() ?: return kotlinx.coroutines.flow.flowOf(ApiState.Error("Cliproxy needs a valid API key"), ApiState.Done)
+        if (!config.enabled || config.baseUrl.isBlank() || config.selectedModel.isNullOrBlank()) {
+            return kotlinx.coroutines.flow.flowOf(ApiState.Error("Configure Cliproxy before starting a chat"), ApiState.Done)
+        }
+        cliproxyClient = OpenAI(key, host = OpenAIHost(baseUrl = "${config.baseUrl.trimEnd('/')}/"))
+        val request = ChatCompletionRequest(
+            model = ModelId(config.selectedModel),
+            messages = listOf(ChatMessage(role = ChatRole.System, content = ModelConstants.OPENAI_PROMPT)) + messageToOpenAICompatibleMessage(ApiType.CLIPROXY, history + question)
+        )
+        return cliproxyClient.chatCompletions(request)
+            .map<ChatCompletionChunk, ApiState> { chunk -> ApiState.Success(chunk.choices.firstOrNull()?.delta?.content.orEmpty()) }
+            .catch { emit(ApiState.Error("Cliproxy request failed. Check connection and API key.")) }
             .onStart { emit(ApiState.Loading) }
             .onCompletion { emit(ApiState.Done) }
     }

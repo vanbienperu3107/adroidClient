@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 interface ChatRepository {
 
     suspend fun completeOpenAIChat(question: Message, history: List<Message>): Flow<ApiState>
+    suspend fun completeCliproxyChat(question: Message, history: List<Message>): Flow<ApiState>
     suspend fun completeAnthropicChat(question: Message, history: List<Message>): Flow<ApiState>
     suspend fun completeGoogleChat(question: Message, history: List<Message>): Flow<ApiState>
     suspend fun completeOllamaChat(question: Message, history: List<Message>): Flow<ApiState>

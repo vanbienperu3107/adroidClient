@@ -27,6 +27,8 @@ data class OpenCodeBrowseData(
     val locked: Boolean = false
 )
 
+data class OpenCodeModelOption(val providerId: String, val id: String, val name: String, val variants: List<String>)
+
 /** Single writer for browsing; no implicit mutation retries or pruning from partial pages. */
 class OpenCodeBrowseRepository(
     private val profiles: OpenCodeProfileRepository,
@@ -86,6 +88,23 @@ class OpenCodeBrowseRepository(
         OpenCodeBrowseData(projects = rows, stale = result !is OpenCodeReadResult.Success)
     }
 
+    /** Prefer the server's current project; fall back to the first ordered project. */
+    suspend fun defaultDirectory(serverId: String): String? {
+        val p = profile(serverId) ?: return null
+        val current = api.get(p, listOf("project", "current"), null)
+        if (observeAuth(p, current)) return null
+        val fromCurrent = (current as? OpenCodeReadResult.Success)?.let { response ->
+            try {
+                json.parseToJsonElement(response.json).jsonObject["worktree"]?.jsonPrimitive?.content
+            } catch (_: Exception) {
+                null
+            }
+        }
+        if (!fromCurrent.isNullOrBlank()) return fromCurrent
+        val projects = projects(serverId)
+        return projects.projects.firstOrNull()?.directory
+    }
+
     suspend fun sessions(serverId: String, directory: String, limit: Int = 100): OpenCodeBrowseData = mutex.withLock {
         require(limit in 1..10000)
         val p = profile(serverId) ?: return@withLock OpenCodeBrowseData(locked = true)
@@ -121,6 +140,20 @@ class OpenCodeBrowseRepository(
         OpenCodeBrowseData(sessions = rows, pending = pending, stale = result !is OpenCodeReadResult.Success)
     }
 
+    suspend fun createSession(serverId: String, directory: String): String? = mutex.withLock {
+        val p = profile(serverId) ?: return@withLock null
+        val result = api.post(p, listOf("session"), directory, "{}", 200)
+        if (observeAuth(p, result) || result !is OpenCodeReadResult.Success) return@withLock null
+        return@withLock try {
+            val session = json.parseToJsonElement(result.json).jsonObject
+            val id = session["id"]?.jsonPrimitive?.content
+            val owner = session["directory"]?.jsonPrimitive?.content
+            if (id?.startsWith("ses") == true && owner == directory) id else null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private suspend fun owned(p: OpenCodeServerProfile, directory: String, session: String): Boolean {
         val response = api.get(p, listOf("session", session), directory)
         observeAuth(p, response)
@@ -139,6 +172,45 @@ class OpenCodeBrowseRepository(
         val result = sse.stream(p, directory, onEvent)
         observeAuth(p, result)
         return result
+    }
+
+    suspend fun models(serverId: String, directory: String): List<OpenCodeModelOption> = mutex.withLock {
+        val p = profile(serverId) ?: return@withLock emptyList()
+        val result = api.getWithQuery(p, listOf("api", "model"), mapOf("location[directory]" to directory))
+        if (observeAuth(p, result) || result !is OpenCodeReadResult.Success) return@withLock emptyList()
+        return@withLock try {
+            val root = json.parseToJsonElement(result.json).jsonObject
+            root["data"]?.jsonArray.orEmpty().mapNotNull { item ->
+                val obj = item.jsonObject
+                val enabled = obj["enabled"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: true
+                if (!enabled) return@mapNotNull null
+                val id = obj["id"]?.jsonPrimitive?.content ?: return@mapNotNull null
+                val provider = obj["providerID"]?.jsonPrimitive?.content ?: return@mapNotNull null
+                val name = obj["name"]?.jsonPrimitive?.content ?: id
+                val variants = obj["variants"]?.jsonArray?.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }.orEmpty()
+                OpenCodeModelOption(provider, id, name, variants)
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun selectModel(serverId: String, directory: String, session: String, model: OpenCodeModelOption, variant: String?): String? = mutex.withLock {
+        val p = profile(serverId) ?: return@withLock "Reauthentication required"
+        if (!owned(p, directory, session)) return@withLock "Cannot verify session ownership; refresh before changing model"
+        val payload = buildJsonObject {
+            put(
+                "model",
+                buildJsonObject {
+                    put("providerID", model.providerId)
+                    put("modelID", model.id)
+                    variant?.let { put("variant", it) }
+                }
+            )
+        }.toString()
+        val result = api.post(p, listOf("api", "session", session, "model"), directory, payload, 204)
+        if (observeAuth(p, result)) return@withLock "Reauthentication required"
+        if (result is OpenCodeReadResult.Accepted) null else "Model change was not confirmed"
     }
 
     /** Coordinator entry point: refresh the authoritative directory snapshot before SSE starts. */

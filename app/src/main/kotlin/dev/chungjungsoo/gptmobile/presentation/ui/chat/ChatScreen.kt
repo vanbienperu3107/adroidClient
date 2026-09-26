@@ -91,6 +91,7 @@ fun ChatScreen(
     val appEnabledPlatforms by chatViewModel.enabledPlatformsInApp.collectManagedState()
 
     val openaiLoadingState by chatViewModel.openaiLoadingState.collectManagedState()
+    val cliproxyLoadingState by chatViewModel.cliproxyLoadingState.collectManagedState()
     val anthropicLoadingState by chatViewModel.anthropicLoadingState.collectManagedState()
     val googleLoadingState by chatViewModel.googleLoadingState.collectManagedState()
     val ollamaLoadingState by chatViewModel.ollamaLoadingState.collectManagedState()
@@ -98,6 +99,7 @@ fun ChatScreen(
     val userMessage by chatViewModel.userMessage.collectManagedState()
 
     val openAIMessage by chatViewModel.openAIMessage.collectManagedState()
+    val cliproxyMessage by chatViewModel.cliproxyMessage.collectManagedState()
     val anthropicMessage by chatViewModel.anthropicMessage.collectManagedState()
     val googleMessage by chatViewModel.googleMessage.collectManagedState()
     val ollamaMessage by chatViewModel.ollamaMessage.collectManagedState()
@@ -227,6 +229,7 @@ fun ChatScreen(
                         chatViewModel.enabledPlatformsInChat.sorted().forEach { apiType ->
                             val message = when (apiType) {
                                 ApiType.OPENAI -> openAIMessage
+                                ApiType.CLIPROXY -> cliproxyMessage
                                 ApiType.ANTHROPIC -> anthropicMessage
                                 ApiType.GOOGLE -> googleMessage
                                 ApiType.OLLAMA -> ollamaMessage
@@ -234,6 +237,7 @@ fun ChatScreen(
 
                             val loadingState = when (apiType) {
                                 ApiType.OPENAI -> openaiLoadingState
+                                ApiType.CLIPROXY -> cliproxyLoadingState
                                 ApiType.ANTHROPIC -> anthropicLoadingState
                                 ApiType.GOOGLE -> googleLoadingState
                                 ApiType.OLLAMA -> ollamaLoadingState

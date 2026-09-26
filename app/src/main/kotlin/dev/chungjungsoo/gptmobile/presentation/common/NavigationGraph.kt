@@ -21,6 +21,7 @@ import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeBrowseScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerEditScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.opencode.OpenCodeServerListScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.AboutScreen
+import dev.chungjungsoo.gptmobile.presentation.ui.setting.CliproxySettingsScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.LicenseScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.PlatformSettingScreen
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.SettingScreen
@@ -61,12 +62,24 @@ fun NavGraphBuilder.startScreenNavigation(navController: NavHostController) {
 }
 
 fun NavGraphBuilder.openCodeNavigation(navController: NavHostController) {
-    composable(Route.OPEN_CODE_BROWSE) { OpenCodeBrowseScreen(onBack = { navController.navigateUp() }) }
+    composable(
+        Route.OPEN_CODE_BROWSE,
+        arguments = listOf(
+            navArgument("directory") {
+                nullable = true
+                defaultValue = null
+            },
+            navArgument("session") {
+                nullable = true
+                defaultValue = null
+            }
+        )
+    ) { OpenCodeBrowseScreen(onBack = { navController.navigateUp() }) }
     composable(Route.OPEN_CODE_SERVERS) {
         OpenCodeServerListScreen(
             onBack = { navController.navigateUp() },
             onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) },
-            onBrowse = { id -> navController.navigate(Route.OPEN_CODE_BROWSE.replace("{serverId}", android.net.Uri.encode(id))) }
+            onBrowse = { id -> navController.navigate(Route.OPEN_CODE_BROWSE.replace("{serverId}", android.net.Uri.encode(id)).replace("{directory}", "").replace("{session}", "")) }
         )
     }
     composable(Route.OPEN_CODE_SERVER_EDIT, arguments = listOf(navArgument("serverId") { defaultValue = "new" })) {
@@ -194,6 +207,15 @@ fun NavGraphBuilder.homeScreenNavigation(navController: NavHostController) {
                         .replace(oldValue = "{enabledPlatforms}", newValue = enabledPlatformString)
                 )
             },
+            onOpenCodeSession = { serverId, directory, sessionId ->
+                navController.navigate(
+                    Route.OPEN_CODE_BROWSE
+                        .replace("{serverId}", android.net.Uri.encode(serverId))
+                        .replace("{directory}", android.net.Uri.encode(directory))
+                        .replace("{session}", android.net.Uri.encode(sessionId))
+                )
+            },
+            onOpenCodeSetup = { navController.navigate(Route.OPEN_CODE_SERVERS) },
             navigateToNewChat = {
                 val enabledPlatformString = it.joinToString(",") { v -> v.name }
                 navController.navigate(
@@ -234,11 +256,13 @@ fun NavGraphBuilder.settingNavigation(navController: NavHostController) {
                 onNavigateToPlatformSetting = { apiType ->
                     when (apiType) {
                         ApiType.OPENAI -> navController.navigate(Route.OPENAI_SETTINGS)
+                        ApiType.CLIPROXY -> navController.navigate(Route.CLIPROXY_SETTINGS)
                         ApiType.ANTHROPIC -> navController.navigate(Route.ANTHROPIC_SETTINGS)
                         ApiType.GOOGLE -> navController.navigate(Route.GOOGLE_SETTINGS)
                         ApiType.OLLAMA -> navController.navigate(Route.OLLAMA_SETTINGS)
                     }
                 },
+                onNavigateToCliproxy = { navController.navigate(Route.CLIPROXY_SETTINGS) },
                 onNavigateToAboutPage = { navController.navigate(Route.ABOUT_PAGE) }
             )
         }
@@ -251,6 +275,9 @@ fun NavGraphBuilder.settingNavigation(navController: NavHostController) {
                 settingViewModel = settingViewModel,
                 apiType = ApiType.OPENAI
             ) { navController.navigateUp() }
+        }
+        composable(Route.CLIPROXY_SETTINGS) {
+            CliproxySettingsScreen(onBack = { navController.navigateUp() })
         }
         composable(Route.ANTHROPIC_SETTINGS) {
             val parentEntry = remember(it) {
@@ -295,7 +322,7 @@ fun NavGraphBuilder.settingNavigation(navController: NavHostController) {
             OpenCodeServerListScreen(
                 onBack = { navController.navigateUp() },
                 onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) },
-                onBrowse = { id -> navController.navigate(Route.OPEN_CODE_BROWSE.replace("{serverId}", android.net.Uri.encode(id))) }
+                onBrowse = { id -> navController.navigate(Route.OPEN_CODE_BROWSE.replace("{serverId}", android.net.Uri.encode(id)).replace("{directory}", "").replace("{session}", "")) }
             )
         }
     }

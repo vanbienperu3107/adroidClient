@@ -7,11 +7,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -37,6 +41,7 @@ fun SelectPlatformScreen(
     onBackAction: () -> Unit
 ) {
     val platformState by setupViewModel.platformState.collectManagedState()
+    var openCodeSelected by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -49,21 +54,37 @@ fun SelectPlatformScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             GetStartedText()
+            OpenCodePlatformItem(openCodeSelected) { openCodeSelected = it }
             SelectPlatform(
                 platforms = platformState,
                 onClickEvent = { setupViewModel.updateCheckedState(it) }
             )
             Spacer(modifier = Modifier.weight(1f))
             PrimaryLongButton(
-                enabled = platformState.any { it.selected },
+                enabled = openCodeSelected || platformState.any { it.selected },
                 onClick = {
-                    val nextStep = setupViewModel.getNextSetupRoute(currentRoute)
+                    val nextStep = if (openCodeSelected) Route.OPEN_CODE_SERVERS else setupViewModel.getNextSetupRoute(currentRoute)
                     onNavigate(nextStep)
                 },
                 text = stringResource(R.string.next)
             )
         }
     }
+}
+
+@Composable
+private fun OpenCodePlatformItem(selected: Boolean, onSelected: (Boolean) -> Unit) {
+    androidx.compose.material3.ListItem(
+        modifier = Modifier.fillMaxWidth(),
+        headlineContent = { Text("OpenCode") },
+        supportingContent = { Text("Work with your projects, sessions, tools, and server-configured models.") },
+        leadingContent = { Checkbox(checked = selected, onCheckedChange = onSelected) }
+    )
+    Text(
+        text = "Other direct providers",
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.padding(start = 24.dp, top = 16.dp)
+    )
 }
 
 @Preview

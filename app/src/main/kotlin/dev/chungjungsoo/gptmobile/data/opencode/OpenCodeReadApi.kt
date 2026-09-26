@@ -52,6 +52,8 @@ class OpenCodeReadApi(
 
     suspend fun get(profile: OpenCodeServerProfile, segments: List<String>, directory: String?, limit: Int? = null, before: String? = null): OpenCodeReadResult = request(profile, segments, directory, "GET", null, limit, before)
 
+    suspend fun getWithQuery(profile: OpenCodeServerProfile, segments: List<String>, query: Map<String, String>): OpenCodeReadResult = request(profile, segments, null, "GET", null, null, null, extraQuery = query)
+
     /** Call only after verifying session ownership. Mutations are never retried. */
     suspend fun mutate(profile: OpenCodeServerProfile, segments: List<String>, directory: String, method: String, json: String? = null): OpenCodeReadResult {
         require(method == "PATCH" || method == "DELETE")
@@ -61,7 +63,7 @@ class OpenCodeReadApi(
     /** POST actions are deliberately non-retrying; callers must model uncertain outcomes. */
     suspend fun post(profile: OpenCodeServerProfile, segments: List<String>, directory: String, json: String, expectedStatus: Int): OpenCodeReadResult = request(profile, segments, directory, "POST", json, null, null, setOf(expectedStatus))
 
-    private suspend fun request(profile: OpenCodeServerProfile, segments: List<String>, directory: String?, method: String, payload: String?, limit: Int?, before: String?, expectedStatuses: Set<Int> = setOf(200)): OpenCodeReadResult = withContext(Dispatchers.IO) {
+    private suspend fun request(profile: OpenCodeServerProfile, segments: List<String>, directory: String?, method: String, payload: String?, limit: Int?, before: String?, expectedStatuses: Set<Int> = setOf(200), extraQuery: Map<String, String> = emptyMap()): OpenCodeReadResult = withContext(Dispatchers.IO) {
         require(segments.isNotEmpty() && segments.all { it.isNotBlank() && it != "." && it != ".." && '/' !in it && '\\' !in it })
         require(limit == null || limit > 0)
         val canonical = policy.canonicalize(profile.baseUrl)
@@ -77,6 +79,7 @@ class OpenCodeReadApi(
             directory?.let { addQueryParameter("directory", it) }
             limit?.let { addQueryParameter("limit", it.toString()) }
             before?.let { addQueryParameter("before", it) }
+            extraQuery.forEach { (key, value) -> addQueryParameter(key, value) }
         }.build()
         val request = Request.Builder().url(url).header("Accept", "application/json")
             .header("Authorization", Credentials.basic(credential.username, credential.password))
