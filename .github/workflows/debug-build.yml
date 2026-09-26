@@ -1,7 +1,7 @@
 name: Debug build APK
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - "main"
     paths-ignore:
@@ -19,14 +19,8 @@ jobs:
     name: Build debug APK
     runs-on: macos-14
 
-    permissions:
-      pull-requests: write
-
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Setup JDK
         uses: actions/setup-java@v4
@@ -45,10 +39,3 @@ jobs:
         with:
           name: debug-${{ github.sha }}
           path: ${{ github.workspace }}/app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Comment APK Link
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          comment_tag: apk
-          message: |
-            Build complete! Here's the debug APK: ${{ steps.artifact-upload-step.outputs.artifact-url }}

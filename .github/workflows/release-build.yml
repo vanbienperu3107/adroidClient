@@ -3,6 +3,9 @@ name: Generate Release Version
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Release APK
@@ -25,10 +28,10 @@ jobs:
           echo "Using build-tools $latest_bt"
           echo "$ANDROID_HOME/build-tools/$latest_bt" >> $GITHUB_PATH
 
-      - name: Build Unsigned Release APK
+      - name: Build release APK
         run: ./gradlew assembleRelease
 
-      - name: Build Unsigned Release App Bundle
+      - name: Build release App Bundle
         run: ./gradlew bundleRelease
 
       - name: Decode Signing Key
@@ -56,20 +59,18 @@ jobs:
 
       - name: Create Job Summary
         run: |
-          unsigned_hash=$(md5sum ./apk/release/app-release-unsigned.apk | awk '{print $1}')
-          signed_hash=$(md5sum ./apk/release/app-release.apk | awk '{print $1}')
-          signed_aab_hash=$(md5sum ./bundle/release/app-release.aab | awk '{print $1}')
+          signed_hash=$(sha256sum ./apk/release/app-release.apk | awk '{print $1}')
+          signed_aab_hash=$(sha256sum ./bundle/release/app-release.aab | awk '{print $1}')
           certificate_hash=$(apksigner verify --print-certs ./apk/release/app-release.apk | grep "SHA-256" | awk -F': ' '{print $2}')
           echo "### Release Build Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Unsigned APK md5**: \`$unsigned_hash\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Signed APK md5**: \`$signed_hash\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Signed AAB md5**: \`$signed_aab_hash\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Signed APK SHA-256**: \`$signed_hash\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Signed AAB SHA-256**: \`$signed_aab_hash\`" >> $GITHUB_STEP_SUMMARY
           echo "**Certificate SHA-256**: \`$certificate_hash\`" >> $GITHUB_STEP_SUMMARY
         working-directory: ${{ github.workspace }}/app/build/outputs
 
       - name: Verify APK signature
-        run: apksigner verify --verbose app-release.apk | head -5
+        run: apksigner verify --verbose --print-certs app-release.apk
         working-directory: ${{ github.workspace }}/app/build/outputs/apk/release
 
       - name: Upload Signed APK
