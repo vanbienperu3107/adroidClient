@@ -26,7 +26,7 @@ import dev.chungjungsoo.gptmobile.presentation.common.PrimaryLongButton
 import dev.chungjungsoo.gptmobile.presentation.icons.GptMobileStartScreen
 
 @Composable
-fun StartScreen(onStartClick: () -> Unit) {
+fun StartScreen(onStartClick: () -> Unit, onOpenCodeClick: () -> Unit) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
             modifier = Modifier
@@ -42,6 +42,7 @@ fun StartScreen(onStartClick: () -> Unit) {
                 onClick = onStartClick,
                 text = stringResource(R.string.get_started)
             )
+            PrimaryLongButton(onClick = onOpenCodeClick, text = "Connect OpenCode")
         }
     }
 }

@@ -27,6 +27,7 @@
 .cxx
 app/release/**
 app/build/**
+.kotlin/
 
 # Codebase memory index
 /.codebase-memory/

@@ -5,11 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chungjungsoo.gptmobile.presentation.common.LocalDynamicTheme
@@ -18,7 +15,7 @@ import dev.chungjungsoo.gptmobile.presentation.common.Route
 import dev.chungjungsoo.gptmobile.presentation.common.SetupNavGraph
 import dev.chungjungsoo.gptmobile.presentation.common.ThemeSettingProvider
 import dev.chungjungsoo.gptmobile.presentation.theme.GPTMobileTheme
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -36,7 +33,22 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val navController = rememberNavController()
-            navController.checkForExistingSettings()
+            LaunchedEffect(navController) {
+                if (savedInstanceState == null) {
+                    val event = mainViewModel.event.first()
+                    val target = when (event) {
+                        MainViewModel.SplashEvent.OpenIntro -> Route.GET_STARTED
+                        MainViewModel.SplashEvent.OpenCode -> Route.OPEN_CODE_SERVERS
+                        MainViewModel.SplashEvent.OpenHome -> null
+                    }
+                    if (target != null) {
+                        navController.navigate(target) {
+                            popUpTo(Route.CHAT_LIST) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            }
 
             ThemeSettingProvider {
                 GPTMobileTheme(
@@ -44,20 +56,6 @@ class MainActivity : ComponentActivity() {
                     themeMode = LocalThemeMode.current
                 ) {
                     SetupNavGraph(navController)
-                }
-            }
-        }
-    }
-
-    private fun NavHostController.checkForExistingSettings() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                mainViewModel.event.collect { event ->
-                    if (event == MainViewModel.SplashEvent.OpenIntro) {
-                        navigate(Route.GET_STARTED) {
-                            popUpTo(Route.CHAT_LIST) { inclusive = true }
-                        }
-                    }
                 }
             }
         }
