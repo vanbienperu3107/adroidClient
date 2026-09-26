@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.chungjungsoo.gptmobile.data.opencode.CachedOpenCodeInteraction
 import dev.chungjungsoo.gptmobile.util.collectManagedState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,6 +39,8 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
     var title by remember { mutableStateOf("") }
     var pendingInfo by remember { mutableStateOf(false) }
     var prompt by remember { mutableStateOf("") }
+    var interaction by remember { mutableStateOf<CachedOpenCodeInteraction?>(null) }
+    var answer by remember { mutableStateOf("") }
     val back = { if (!viewModel.up()) onBack() }
     BackHandler(onBack = back)
     mutation?.let { (id, deleting) ->
@@ -58,8 +61,47 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
         AlertDialog(
             onDismissRequest = { pendingInfo = false },
             title = { Text("Pending requests") },
-            text = { Text("Reply on desktop. Android replies are planned in Feature 05.") },
+            text = { Text("Open an individual pending request to reply. Dismissing this dialog does not change it on the server.") },
             confirmButton = { TextButton(onClick = { pendingInfo = false }) { Text("OK") } }
+        )
+    }
+    interaction?.let { request ->
+        AlertDialog(
+            onDismissRequest = { interaction = null },
+            title = { Text(request.title.take(120)) },
+            text = {
+                Column {
+                    Text(request.details.take(8_000))
+                    if (request.kind == "question") OutlinedTextField(answer, { answer = it }, label = { Text("Answer") })
+                    if (request.kind == "permission" && request.allowsAlways) Text("Always allow - scope and duration are determined by the OpenCode server.")
+                }
+            },
+            confirmButton = {
+                Row {
+                    if (request.kind == "permission") {
+                        TextButton(enabled = !loading, onClick = {
+                            viewModel.respond(request, "once")
+                            interaction = null
+                        }) { Text("Allow once") }
+                        if (request.allowsAlways) {
+                            TextButton(enabled = !loading, onClick = {
+                                viewModel.respond(request, "always")
+                                interaction = null
+                            }) { Text("Always") }
+                        }
+                    } else {
+                        TextButton(enabled = answer.isNotBlank() && !loading, onClick = {
+                            viewModel.respond(request, "reply", answer)
+                            interaction = null
+                        }) { Text("Reply") }
+                    }
+                    TextButton(enabled = !loading, onClick = {
+                        viewModel.respond(request, "reject")
+                        interaction = null
+                    }) { Text("Reject") }
+                }
+            },
+            dismissButton = { TextButton(onClick = { interaction = null }) { Text("Cancel") } }
         )
     }
     Scaffold(topBar = {
@@ -114,6 +156,14 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
                 Text("Prompt ${pending.state.lowercase()}: ${pending.content.take(240)}")
                 pending.uncertainty?.let { Text(it) }
             }
+            items(data.interactions, key = { it.requestId }) { request ->
+                TextButton(enabled = !loading && !data.stale, onClick = {
+                    answer = ""
+                    interaction = request
+                }) {
+                    Text(if (request.kind == "permission") "Permission: ${request.title}" else "Question: ${request.title}")
+                }
+            }
             if (viewModel.sessionId != null) {
                 item {
                     OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("Send prompt") }, enabled = !loading && !data.stale)
@@ -123,7 +173,15 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
                             prompt = ""
                         }) { Text("Send") }
                         TextButton(enabled = !loading && !data.stale, onClick = viewModel::abort) { Text("Stop agent") }
+                        TextButton(enabled = !loading && !data.stale, onClick = viewModel::diff) { Text("View diff") }
                     }
+                }
+            }
+            data.diff?.let { diff ->
+                item {
+                    Text("Diff preview")
+                    OpenCodeMarkdown(diff.take(64_000))
+                    if (diff.length > 64_000) Text("Preview limited to 64,000 characters.")
                 }
             }
             if (data.messages.isNotEmpty()) item { TextButton(enabled = !loading, onClick = { viewModel.refresh(data.messages.first().id) }) { Text("Load older messages") } }

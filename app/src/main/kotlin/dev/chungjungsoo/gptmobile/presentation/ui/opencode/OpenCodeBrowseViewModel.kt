@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.chungjungsoo.gptmobile.data.opencode.CachedOpenCodeInteraction
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseData
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseRepository
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeProfileRepository
@@ -175,6 +176,52 @@ class OpenCodeBrowseViewModel @Inject constructor(
                 throw cancelled
             } catch (_: Exception) {
                 if (current == generation) _data.value = _data.value.copy(error = "Abort outcome uncertain; refresh session status")
+            } finally {
+                if (current == generation) _loading.value = false
+            }
+        }
+    }
+
+    fun respond(request: CachedOpenCodeInteraction, reply: String, answer: String = "") {
+        if (_loading.value || request.state != "PENDING") return
+        val dir = directory ?: return
+        val session = sessionId ?: return
+        if (request.kind == "question" && reply != "reject" && answer.isBlank()) {
+            _data.value = _data.value.copy(error = "Enter an answer before replying")
+            return
+        }
+        _loading.value = true
+        val current = ++generation
+        actionJob = viewModelScope.launch {
+            try {
+                val answers = if (reply == "reject") emptyList() else listOf(listOf(answer.take(4_000)))
+                val error = repository.interaction(serverId, dir, session, request, reply, answers)
+                if (current != generation) return@launch
+                if (error == null) refresh() else _data.value = _data.value.copy(error = error)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (current == generation) _data.value = _data.value.copy(error = "Interaction outcome uncertain; refresh before replying again")
+            } finally {
+                if (current == generation) _loading.value = false
+            }
+        }
+    }
+
+    fun diff() {
+        if (_loading.value) return
+        val dir = directory ?: return
+        val session = sessionId ?: return
+        _loading.value = true
+        val current = ++generation
+        actionJob = viewModelScope.launch {
+            try {
+                val diff = repository.diff(serverId, dir, session)
+                if (current == generation) _data.value = _data.value.copy(diff = diff ?: "No diff available")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (current == generation) _data.value = _data.value.copy(error = "Could not load diff")
             } finally {
                 if (current == generation) _loading.value = false
             }

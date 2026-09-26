@@ -20,6 +20,8 @@ data class OpenCodeBrowseData(
     val messages: List<OpenCodeHistoryMessage> = emptyList(),
     val pending: Map<String, Int>? = null,
     val prompts: List<CachedOpenCodePendingPrompt> = emptyList(),
+    val interactions: List<CachedOpenCodeInteraction> = emptyList(),
+    val diff: String? = null,
     val stale: Boolean = false,
     val error: String? = null,
     val locked: Boolean = false
@@ -105,8 +107,10 @@ class OpenCodeBrowseRepository(
             if (observeAuth(p, questions)) return@withLock OpenCodeBrowseData(locked = true)
             if (permissions is OpenCodeReadResult.Success && questions is OpenCodeReadResult.Success) {
                 pending = try {
-                    (json.parseToJsonElement(permissions.json).jsonArray + json.parseToJsonElement(questions.json).jsonArray)
-                        .map { it.jsonObject.getValue("sessionID").jsonPrimitive.content }.groupingBy { it }.eachCount()
+                    val interactions = decodeInteractions(serverId, directory, p.profileRevision, permissions.json, questions.json)
+                    profiles.withCurrentProfile(p) { dao.upsertInteractions(interactions) }
+                    interactions
+                        .map { it.sessionId }.groupingBy { it }.eachCount()
                 } catch (_: Exception) {
                     null
                 }
@@ -175,17 +179,57 @@ class OpenCodeBrowseRepository(
         }
         var messages = emptyList<OpenCodeHistoryMessage>()
         var prompts = emptyList<CachedOpenCodePendingPrompt>()
+        var interactions = emptyList<CachedOpenCodeInteraction>()
         if (!profiles.withCurrentProfile(p) {
                 val rows = dao.messages(serverId, directory, session, p.profileRevision)
                 val parts = dao.parts(serverId, directory, session).groupBy { it.messageId }
                 messages = rows.map { m -> OpenCodeHistoryMessage(m.messageId, m.role, parts[m.messageId].orEmpty().map { OpenCodeHistoryPart(it.partId, it.type, it.text) }) }
                 dao.recoverPendingPrompts(serverId, directory, session, p.profileRevision)
                 prompts = dao.pendingPrompts(serverId, directory, session, p.profileRevision)
+                interactions = dao.interactions(serverId, directory, session, p.profileRevision)
             }
         ) {
             return@withLock OpenCodeBrowseData(locked = true)
         }
-        OpenCodeBrowseData(messages = messages, prompts = prompts, stale = response !is OpenCodeReadResult.Success)
+        OpenCodeBrowseData(messages = messages, prompts = prompts, interactions = interactions, stale = response !is OpenCodeReadResult.Success)
+    }
+
+    private fun decodeInteractions(serverId: String, directory: String, revision: Long, permissions: String, questions: String): List<CachedOpenCodeInteraction> {
+        val permissionRows = json.parseToJsonElement(permissions).jsonArray.map { item ->
+            val obj = item.jsonObject
+            val scope = obj["always"]?.jsonArray?.joinToString("\n") { it.jsonPrimitive.content }.orEmpty()
+            CachedOpenCodeInteraction(serverId, directory, obj.getValue("sessionID").jsonPrimitive.content, obj.getValue("id").jsonPrimitive.content, revision, "permission", obj.getValue("permission").jsonPrimitive.content, scope, scope.isNotBlank(), "PENDING")
+        }
+        val questionRows = json.parseToJsonElement(questions).jsonArray.map { item ->
+            val obj = item.jsonObject
+            val first = obj.getValue("questions").jsonArray.first().jsonObject
+            CachedOpenCodeInteraction(serverId, directory, obj.getValue("sessionID").jsonPrimitive.content, obj.getValue("id").jsonPrimitive.content, revision, "question", first.getValue("header").jsonPrimitive.content, first.getValue("question").jsonPrimitive.content, false, "PENDING")
+        }
+        return permissionRows + questionRows
+    }
+
+    suspend fun interaction(serverId: String, directory: String, session: String, request: CachedOpenCodeInteraction, reply: String, answers: List<List<String>> = emptyList()): String? = mutex.withLock {
+        val p = profile(serverId) ?: return@withLock "Reauthentication required"
+        if (request.serverId != serverId || request.directory != directory || request.sessionId != session || request.state != "PENDING" || !owned(p, directory, session)) return@withLock "Request is no longer actionable; refresh"
+        val segments = if (request.kind == "permission") listOf("permission", request.requestId, "reply") else listOf("question", request.requestId, if (reply == "reject") "reject" else "reply")
+        val payload = if (request.kind == "permission") buildJsonObject { put("reply", reply) }.toString() else buildJsonObject { put("answers", kotlinx.serialization.json.buildJsonArray { answers.forEach { selected -> add(kotlinx.serialization.json.buildJsonArray { selected.forEach { add(it) } }) } }) }.toString()
+        dao.updateInteraction(serverId, directory, session, request.requestId, "SUBMITTING")
+        val result = api.post(p, segments, directory, payload, 200)
+        if (observeAuth(p, result)) return@withLock "Reauthentication required"
+        if (result is OpenCodeReadResult.Success && result.json.trim() == "true") {
+            dao.updateInteraction(serverId, directory, session, request.requestId, "RESOLVED")
+        } else {
+            dao.updateInteraction(serverId, directory, session, request.requestId, "STALE")
+        }
+        return@withLock null
+    }
+
+    suspend fun diff(serverId: String, directory: String, session: String): String? = mutex.withLock {
+        val p = profile(serverId) ?: return@withLock null
+        if (!owned(p, directory, session)) return@withLock null
+        val result = api.get(p, listOf("session", session, "diff"), directory)
+        if (result !is OpenCodeReadResult.Success) return@withLock null
+        return@withLock result.json.take(256_000)
     }
 
     suspend fun prompt(serverId: String, directory: String, session: String, content: String): String? = mutex.withLock {

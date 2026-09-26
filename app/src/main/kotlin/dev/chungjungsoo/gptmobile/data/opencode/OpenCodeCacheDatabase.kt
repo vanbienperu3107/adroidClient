@@ -66,6 +66,20 @@ data class CachedOpenCodePendingPrompt(
     val createdAt: Long
 )
 
+@Entity(tableName = "opencode_interactions", primaryKeys = ["serverId", "directory", "sessionId", "requestId"])
+data class CachedOpenCodeInteraction(
+    val serverId: String,
+    val directory: String,
+    val sessionId: String,
+    val requestId: String,
+    val profileRevision: Long,
+    val kind: String,
+    val title: String,
+    val details: String,
+    val allowsAlways: Boolean,
+    val state: String
+)
+
 @Dao
 abstract class OpenCodeCacheDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -74,7 +88,7 @@ abstract class OpenCodeCacheDao {
     @Query("SELECT * FROM opencode_access WHERE serverId=:serverId")
     abstract suspend fun access(serverId: String): OpenCodeCacheAccess?
 
-    @Query("SELECT serverId FROM opencode_session_cache UNION SELECT serverId FROM opencode_projects UNION SELECT serverId FROM opencode_messages UNION SELECT serverId FROM opencode_access UNION SELECT serverId FROM opencode_pending_prompts")
+    @Query("SELECT serverId FROM opencode_session_cache UNION SELECT serverId FROM opencode_projects UNION SELECT serverId FROM opencode_messages UNION SELECT serverId FROM opencode_access UNION SELECT serverId FROM opencode_pending_prompts UNION SELECT serverId FROM opencode_interactions")
     abstract suspend fun serverIds(): List<String>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -92,6 +106,15 @@ abstract class OpenCodeCacheDao {
     @Query("SELECT COUNT(*) FROM opencode_pending_prompts WHERE serverId=:serverId AND directory=:directory AND sessionId=:sessionId AND profileRevision=:revision AND state IN ('PENDING', 'SENDING', 'ACCEPTED')")
     abstract suspend fun activePromptCount(serverId: String, directory: String, sessionId: String, revision: Long): Int
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun upsertInteractions(rows: List<CachedOpenCodeInteraction>)
+
+    @Query("SELECT * FROM opencode_interactions WHERE serverId=:serverId AND directory=:directory AND sessionId=:sessionId AND profileRevision=:revision AND state='PENDING' ORDER BY requestId")
+    abstract suspend fun interactions(serverId: String, directory: String, sessionId: String, revision: Long): List<CachedOpenCodeInteraction>
+
+    @Query("UPDATE opencode_interactions SET state=:state WHERE serverId=:serverId AND directory=:directory AND sessionId=:sessionId AND requestId=:requestId")
+    abstract suspend fun updateInteraction(serverId: String, directory: String, sessionId: String, requestId: String, state: String)
+
     @Query("DELETE FROM opencode_projects WHERE serverId=:serverId AND (:revision IS NULL OR profileRevision != :revision)")
     protected abstract suspend fun purgeProjects(serverId: String, revision: Long?)
 
@@ -107,6 +130,9 @@ abstract class OpenCodeCacheDao {
     @Query("DELETE FROM opencode_pending_prompts WHERE serverId=:serverId AND (:revision IS NULL OR profileRevision != :revision)")
     protected abstract suspend fun purgePendingPrompts(serverId: String, revision: Long?)
 
+    @Query("DELETE FROM opencode_interactions WHERE serverId=:serverId AND (:revision IS NULL OR profileRevision != :revision)")
+    protected abstract suspend fun purgeInteractions(serverId: String, revision: Long?)
+
     @Transaction
     open suspend fun purgeObsolete(serverId: String, revision: Long?) {
         purgeProjects(serverId, revision)
@@ -114,6 +140,7 @@ abstract class OpenCodeCacheDao {
         purgeSessions(serverId, revision)
         purgeAccess(serverId, revision)
         purgePendingPrompts(serverId, revision)
+        purgeInteractions(serverId, revision)
     }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -154,11 +181,15 @@ abstract class OpenCodeCacheDao {
     open suspend fun deleteSession(serverId: String, directory: String, sessionId: String) {
         deleteMessages(serverId, directory, sessionId)
         deletePendingPrompts(serverId, directory, sessionId)
+        deleteInteractions(serverId, directory, sessionId)
         deleteSessionRow(serverId, directory, sessionId)
     }
 
     @Query("DELETE FROM opencode_pending_prompts WHERE serverId=:serverId AND directory=:directory AND sessionId=:sessionId")
     protected abstract suspend fun deletePendingPrompts(serverId: String, directory: String, sessionId: String)
+
+    @Query("DELETE FROM opencode_interactions WHERE serverId=:serverId AND directory=:directory AND sessionId=:sessionId")
+    protected abstract suspend fun deleteInteractions(serverId: String, directory: String, sessionId: String)
 
     @Query("SELECT * FROM opencode_session_cache WHERE serverId = :serverId AND directory = :directory AND profileRevision = :revision ORDER BY updatedAt DESC, sessionId ASC")
     abstract fun sessions(serverId: String, directory: String, revision: Long): Flow<List<CachedOpenCodeSession>>
@@ -181,7 +212,7 @@ abstract class OpenCodeCacheDao {
     abstract suspend fun removeOldRevisions(serverId: String, revision: Long)
 }
 
-@Database(entities = [CachedOpenCodeSession::class, CachedOpenCodeProject::class, CachedOpenCodeMessage::class, CachedOpenCodePart::class, OpenCodeCacheAccess::class, CachedOpenCodePendingPrompt::class], version = 2, exportSchema = true)
+@Database(entities = [CachedOpenCodeSession::class, CachedOpenCodeProject::class, CachedOpenCodeMessage::class, CachedOpenCodePart::class, OpenCodeCacheAccess::class, CachedOpenCodePendingPrompt::class, CachedOpenCodeInteraction::class], version = 3, exportSchema = true)
 abstract class OpenCodeCacheDatabase : RoomDatabase() {
     abstract fun cacheDao(): OpenCodeCacheDao
 
@@ -190,10 +221,17 @@ abstract class OpenCodeCacheDatabase : RoomDatabase() {
             context.applicationContext,
             OpenCodeCacheDatabase::class.java,
             context.noBackupFilesDir.resolve("opencode-cache.db").absolutePath
-        ).addMigrations(object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("CREATE TABLE IF NOT EXISTS `opencode_pending_prompts` (`serverId` TEXT NOT NULL, `directory` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `clientMessageId` TEXT NOT NULL, `profileRevision` INTEGER NOT NULL, `content` TEXT NOT NULL, `state` TEXT NOT NULL, `uncertainty` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`serverId`, `directory`, `sessionId`, `clientMessageId`))")
+        ).addMigrations(
+            object : Migration(1, 2) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    database.execSQL("CREATE TABLE IF NOT EXISTS `opencode_pending_prompts` (`serverId` TEXT NOT NULL, `directory` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `clientMessageId` TEXT NOT NULL, `profileRevision` INTEGER NOT NULL, `content` TEXT NOT NULL, `state` TEXT NOT NULL, `uncertainty` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`serverId`, `directory`, `sessionId`, `clientMessageId`))")
+                }
+            },
+            object : Migration(2, 3) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    database.execSQL("CREATE TABLE IF NOT EXISTS `opencode_interactions` (`serverId` TEXT NOT NULL, `directory` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `requestId` TEXT NOT NULL, `profileRevision` INTEGER NOT NULL, `kind` TEXT NOT NULL, `title` TEXT NOT NULL, `details` TEXT NOT NULL, `allowsAlways` INTEGER NOT NULL, `state` TEXT NOT NULL, PRIMARY KEY(`serverId`, `directory`, `sessionId`, `requestId`))")
+                }
             }
-        }).build()
+        ).build()
     }
 }
