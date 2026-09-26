@@ -62,7 +62,8 @@ class OpenCodeReadApiTest {
             assertEquals("POST", it.request().method)
             assertEquals("/prefix/session/ses_test/prompt_async", it.request().url.encodedPath)
             assertEquals("/Project", it.request().url.queryParameter("directory"))
-            Response.Builder().request(it.request()).protocol(Protocol.HTTP_1_1).code(204).message("accepted").build()
+            Response.Builder().request(it.request()).protocol(Protocol.HTTP_1_1).code(204).message("accepted")
+                .body("".toResponseBody("application/json".toMediaType())).build()
         }.build()
         assertEquals(
             OpenCodeReadResult.Accepted(204),
