@@ -6,3 +6,8 @@
 - **Evidence:** Probe live OpenCode 1.18.30 ghi `POST prompt_async` voi `messageID`, sau do `GET history` tra `info.id` trung ID nay. Gui lai cung ID van duoc `204` va tao part moi.
 - **Boundary:** `messageID` khong la idempotency key. Khong auto retry sau timeout, cancel, network loss hay process death. Khong tim message bang text/timestamp khi khong thay ID; giu `UNKNOWN`.
 - **Follow-up:** Re-probe server target khi implementation de pin version va schema payload.
+
+## D03-02 - CLI proxy credentials
+
+- **Decision:** CLI proxy API keys remain exclusively on the OpenCode server.
+- **Android boundary:** Android continues using the configured OpenCode Basic credential. It must not persist, send, display, export, or log a CLI proxy API key.
