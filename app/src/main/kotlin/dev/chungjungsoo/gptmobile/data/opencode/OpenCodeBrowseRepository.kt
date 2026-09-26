@@ -137,6 +137,11 @@ class OpenCodeBrowseRepository(
         return result
     }
 
+    /** Coordinator entry point: refresh the authoritative directory snapshot before SSE starts. */
+    suspend fun reconcileScope(serverId: String, directory: String) {
+        sessions(serverId, directory)
+    }
+
     suspend fun history(serverId: String, directory: String, session: String, before: String? = null): OpenCodeBrowseData = mutex.withLock {
         val p = profile(serverId) ?: return@withLock OpenCodeBrowseData(locked = true)
         // Scope ownership must be verified before reading a server ID from a route.

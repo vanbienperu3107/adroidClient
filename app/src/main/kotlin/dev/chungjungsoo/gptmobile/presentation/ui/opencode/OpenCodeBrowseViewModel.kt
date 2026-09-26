@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseData
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseRepository
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeProfileRepository
+import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeReliableSyncCoordinator
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class OpenCodeBrowseViewModel @Inject constructor(
     private val repository: OpenCodeBrowseRepository,
+    private val sync: OpenCodeReliableSyncCoordinator,
     private val profiles: OpenCodeProfileRepository,
     private val state: SavedStateHandle
 ) : ViewModel() {
@@ -30,10 +32,9 @@ class OpenCodeBrowseViewModel @Inject constructor(
     val data = _data.asStateFlow()
     private val _loading = MutableStateFlow(false)
     val loading = _loading.asStateFlow()
-    private var job: Job? = null
-    private var streamJob: Job? = null
+    private var loadJob: Job? = null
+    private var actionJob: Job? = null
     private var generation = 0L
-    private var scopeGeneration = 0L
     private var sessionLimit = 100
 
     fun moreSessions() {
@@ -43,15 +44,21 @@ class OpenCodeBrowseViewModel @Inject constructor(
 
     init {
         refresh()
+        directory?.let { sync.activate(serverId, it) }
+        viewModelScope.launch {
+            sync.refreshes.collect { dirty ->
+                if (dirty.serverId == serverId && dirty.directory == directory && actionJob?.isActive != true) refresh(fromSync = true)
+            }
+        }
         viewModelScope.launch {
             var initialized = false
             var previous: Long? = null
             profiles.revisions().collect { revisions ->
                 val next = revisions[serverId]
                 if (initialized && next != previous) {
-                    job?.cancel()
-                    streamJob?.cancel()
-                    ++scopeGeneration
+                    loadJob?.cancel()
+                    actionJob?.cancel()
+                    directory?.let { sync.deactivate(serverId, it) }
                     ++generation
                     _data.value = OpenCodeBrowseData(locked = true)
                     _loading.value = false
@@ -63,44 +70,41 @@ class OpenCodeBrowseViewModel @Inject constructor(
     }
 
     fun project(path: String) {
-        streamJob?.cancel()
-        ++scopeGeneration
+        directory?.let { sync.deactivate(serverId, it) }
         directory = path
         sessionId = null
         sessionLimit = 100
         refresh()
+        sync.activate(serverId, path)
     }
     fun session(id: String) {
         sessionId = id
-        ++scopeGeneration
         refresh()
-        startStream()
+        sync.activate(serverId, directory ?: return)
     }
     fun up(): Boolean {
         if (sessionId != null) {
             sessionId = null
-            streamJob?.cancel()
-            ++scopeGeneration
         } else if (directory != null) {
+            sync.deactivate(serverId, requireNotNull(directory))
             directory = null
-            ++scopeGeneration
         } else {
             return false
         }
         refresh()
         return true
     }
-    fun refresh(before: String? = null) {
+    fun refresh(before: String? = null, fromSync: Boolean = false) {
         // Only navigation identifiers, never credential or message contents.
         state["selectedDirectory"] = directory
         state["selectedSession"] = sessionId
-        job?.cancel()
+        loadJob?.cancel()
         val current = ++generation
         _loading.value = true
-        _data.value = OpenCodeBrowseData()
+        if (!fromSync) _data.value = OpenCodeBrowseData()
         val dir = directory
         val session = sessionId
-        job = viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             try {
                 val result = when {
                     dir == null -> repository.projects(serverId)
@@ -117,25 +121,12 @@ class OpenCodeBrowseViewModel @Inject constructor(
             }
         }
     }
-    private fun startStream() {
-        streamJob?.cancel()
-        val dir = directory ?: return
-        val session = sessionId ?: return
-        val streamGeneration = scopeGeneration
-        streamJob = viewModelScope.launch {
-            repository.events(serverId, dir) { event ->
-                viewModelScope.launch {
-                    if (streamGeneration == scopeGeneration && (event.sessionId == null || event.sessionId == session) && sessionId == session && directory == dir) refresh()
-                }
-            }
-        }
-    }
     fun mutate(id: String, title: String?) {
         if (_loading.value) return
         val dir = directory ?: return
         _loading.value = true
         val current = ++generation
-        job = viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             try {
                 val error = repository.mutate(serverId, dir, id, title)
                 if (current != generation) return@launch
@@ -155,7 +146,7 @@ class OpenCodeBrowseViewModel @Inject constructor(
         val session = sessionId ?: return
         _loading.value = true
         val current = ++generation
-        job = viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             try {
                 val error = repository.prompt(serverId, dir, session, content)
                 if (current != generation) return@launch
@@ -175,7 +166,7 @@ class OpenCodeBrowseViewModel @Inject constructor(
         val session = sessionId ?: return
         _loading.value = true
         val current = ++generation
-        job = viewModelScope.launch {
+        actionJob = viewModelScope.launch {
             try {
                 val error = repository.abort(serverId, dir, session)
                 if (current != generation) return@launch
@@ -191,7 +182,9 @@ class OpenCodeBrowseViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        streamJob?.cancel()
+        loadJob?.cancel()
+        actionJob?.cancel()
+        directory?.let { sync.deactivate(serverId, it) }
         super.onCleared()
     }
 }
