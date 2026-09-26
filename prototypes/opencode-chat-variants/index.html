@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prototype: 2 hướng thiết kế khác cho OpenCode chat</title>
+<link rel="icon" href="data:,">
+<!--
+  Cùng nội dung với ../opencode-chat (hướng A "Bàn điều khiển rêu") để so sánh công bằng.
+
+  Hướng B "Ca đêm": giao diện tối cho người hay mở app ngoài giờ để duyệt agent.
+    Màu: --night #1B2233 nền, --deck #232C40 mặt, --mist #C9D1E0 chữ, --dim #8C97AD phụ, --lamp #F0B45A cần duyệt, --sky #7FA8FF agent.
+    Type: Space Grotesk (UI), JetBrains Mono (code). Điểm nhấn: dòng thời gian dọc, bước chờ duyệt "sáng đèn" trên rail.
+    Tránh default: không dùng nền đen tuyền + xanh acid; nền là xanh đêm, điểm nhấn là màu đèn vàng ấm.
+
+  Hướng C "Bảng kiểm": sáng, chữ lớn, mọi thứ là danh sách bước có thể quét nhanh bằng mắt khi đang đi.
+    Màu: --chalk #FAFAF7 nền, --graphite #22262B chữ, --pencil #5F6670 phụ, --teal #0F6E6E agent, --flag #C2410C cần duyệt, --rule #E3E3DC.
+    Type: Atkinson Hyperlegible (UI, dễ đọc ở cỡ nhỏ), JetBrains Mono (code).
+    Điểm nhấn: yêu cầu cấp quyền nằm ngay trong luồng như một bước checklist chưa tick, không che nội dung.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #C9CFC8; min-height: 100vh; padding: 24px;
+    display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; align-items: flex-start;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, pre, .mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-variant-ligatures: none; }
+  .device {
+    position: relative; width: 390px; height: min(844px, calc(100vh - 48px)); min-height: 640px;
+    border-radius: 36px; overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 0 0 10px #1E252C, 0 30px 60px -20px rgba(23, 32, 43, .55);
+  }
+  @media (max-width: 480px) {
+    body { padding: 0; gap: 0; }
+    .device { width: 100%; height: 100dvh; min-height: 0; border-radius: 0; box-shadow: none; border-bottom: 8px solid #C9CFC8; }
+  }
+  button { font: inherit; }
+  [hidden] { display: none !important; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+  /* ================= Hướng B: Ca đêm ================= */
+  .b {
+    --night: #1B2233; --deck: #232C40; --edge: #33405A; --mist: #E3E8F1; --dim: #98A3B8;
+    --lamp: #F0B45A; --sky: #8DB2FF; --add: #7FD1A4; --del: #F29A8E;
+    background: var(--night); color: var(--mist); font-family: "Space Grotesk", system-ui, sans-serif;
+  }
+  .b :focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; border-radius: 8px; }
+  .b .top { padding: 16px 8px 14px 4px; display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--edge); }
+  .b .icon { width: 48px; height: 48px; border: 0; border-radius: 24px; background: transparent; color: var(--mist); display: grid; place-items: center; cursor: pointer; flex: none; }
+  .b .top .t { flex: 1; min-width: 0; }
+  .b .top h1 { margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .b .top p { margin: 2px 0 0; font-size: 13px; color: var(--dim); }
+  .b .top p code { color: var(--mist); font-size: 12px; }
+  .b .feed { flex: 1; overflow-y: auto; padding: 18px 16px 20px; }
+  .b .you { margin: 0 0 22px auto; max-width: 85%; background: var(--deck); border: 1px solid var(--edge); border-radius: 18px 18px 4px 18px; padding: 12px 14px; font-size: 15px; line-height: 22px; }
+  .b .rail { list-style: none; margin: 0; padding: 0 0 0 26px; position: relative; }
+  .b .rail::before { content: ""; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--edge); }
+  .b .rail > li { position: relative; padding: 0 0 18px; font-size: 15px; line-height: 22px; }
+  .b .rail > li::before { content: ""; position: absolute; left: -23px; top: 6px; width: 12px; height: 12px; border-radius: 6px; background: var(--night); border: 2px solid var(--dim); }
+  .b .rail > li.done::before { background: var(--dim); }
+  .b .rail > li.lamp::before { background: var(--lamp); border-color: var(--lamp); box-shadow: 0 0 0 6px rgba(240, 180, 90, .18); }
+  .b .rail .small { display: block; font-size: 13px; color: var(--dim); }
+  .b .rail code { font-size: 12.5px; color: var(--mist); }
+  .b details summary { cursor: pointer; color: var(--dim); list-style: none; min-height: 24px; }
+  .b details summary::-webkit-details-marker { display: none; }
+  .b details p { margin: 6px 0 0; color: var(--dim); font-size: 14px; }
+  .b .ask { background: #2B2A2B; border: 1px solid #5B4A2E; border-radius: 16px; padding: 14px; margin-top: 8px; }
+  .b .ask h2 { margin: 0 0 4px; font-size: 16px; font-weight: 600; color: var(--lamp); }
+  .b .ask p { margin: 0 0 10px; font-size: 14px; color: var(--dim); }
+  .b .ask pre { margin: 0 0 12px; font-size: 15px; line-height: 22px; font-weight: 600; color: #FFF3DF; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .b .acts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .b .acts button { min-height: 48px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; }
+  .b .acts .go { background: var(--lamp); color: #231A0A; border: 0; }
+  .b .acts .al { background: transparent; color: var(--mist); border: 1.5px solid var(--edge); }
+  .b .acts .no { background: transparent; color: var(--del); border: 1.5px solid #6A3A36; }
+  .b .diff { margin-top: 10px; background: #151B29; border: 1px solid var(--edge); border-radius: 12px; overflow: hidden; }
+  .b .diff header { display: flex; justify-content: space-between; padding: 8px 12px; font-size: 12px; color: var(--dim); border-bottom: 1px solid var(--edge); }
+  .b .diff pre { margin: 0; font-size: 12px; line-height: 19px; }
+  .b .diff pre span { display: block; padding: 0 12px; white-space: pre; }
+  .b .diff .a { color: var(--add); background: rgba(127, 209, 164, .1); }
+  .b .diff .d { color: var(--del); background: rgba(242, 154, 142, .1); }
+  .b .diff .c { color: var(--dim); }
+  .b .compose { display: flex; gap: 8px; padding: 10px 12px 18px; border-top: 1px solid var(--edge); background: var(--night); }
+  .b .compose input { flex: 1; min-height: 48px; border-radius: 24px; border: 1px solid var(--edge); background: var(--deck); color: var(--mist); padding: 0 16px; font: 15px "Space Grotesk", sans-serif; }
+  .b .compose input::placeholder { color: var(--dim); }
+  .b .compose .stop { min-height: 48px; padding: 0 16px; border-radius: 24px; border: 1.5px solid #6A3A36; background: transparent; color: var(--del); font-weight: 600; cursor: pointer; }
+
+  /* ================= Hướng C: Bảng kiểm ================= */
+  .c {
+    --chalk: #FAFAF7; --graphite: #22262B; --pencil: #596069; --teal: #0F6E6E; --teal-soft: #E1F0EF;
+    --flag: #B93D0B; --flag-soft: #FDEEE6; --rule: #E3E3DC; --add: #1D6B46; --del: #A33A2E;
+    background: var(--chalk); color: var(--graphite); font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  }
+  .c :focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+  .c .top { padding: 14px 16px 12px; border-bottom: 3px solid var(--graphite); }
+  .c .top .row { display: flex; align-items: center; gap: 8px; }
+  .c .back { width: 48px; height: 48px; margin-left: -12px; border: 0; background: transparent; border-radius: 24px; display: grid; place-items: center; color: var(--graphite); cursor: pointer; }
+  .c .top h1 { margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; }
+  .c .top p { margin: 4px 0 0; font-size: 14px; color: var(--pencil); }
+  .c .top p code { font-size: 12.5px; color: var(--graphite); }
+  .c .progress { display: flex; gap: 4px; margin-top: 12px; }
+  .c .progress i { flex: 1; height: 6px; border-radius: 3px; background: var(--rule); }
+  .c .progress i.on { background: var(--teal); }
+  .c .progress i.flag { background: var(--flag); }
+  .c .progress-label { margin-top: 6px; font-size: 13px; color: var(--pencil); }
+  .c .feed { flex: 1; overflow-y: auto; padding: 16px; }
+  .c .asked { font-size: 17px; line-height: 25px; margin: 0 0 6px; }
+  .c .asked-meta { font-size: 13px; color: var(--pencil); margin: 0 0 18px; }
+  .c .steps { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  .c .steps > li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 16px; line-height: 23px; }
+  .c .box { width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--pencil); display: grid; place-items: center; margin-top: 0; }
+  .c li.done .box { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .c li.wait .box { border-color: var(--flag); border-width: 2.5px; }
+  .c .steps code { font-size: 13.5px; }
+  .c .sub { display: block; font-size: 14px; color: var(--pencil); margin-top: 2px; }
+  .c li.wait { background: var(--flag-soft); margin: 0 -16px; padding: 16px; grid-template-columns: 28px 1fr; }
+  .c li.wait strong { color: var(--flag); }
+  .c li.wait pre { margin: 10px 0 12px; font-size: 16px; line-height: 23px; font-weight: 600; background: #fff; border: 1.5px solid var(--graphite); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .c .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .c .acts button { min-height: 48px; padding: 0 16px; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; }
+  .c .acts .go { background: var(--graphite); color: #fff; border: 0; flex: 1 1 100%; }
+  .c .acts .al { background: #fff; color: var(--graphite); border: 2px solid var(--graphite); flex: 1; }
+  .c .acts .no { background: #fff; color: var(--del); border: 2px solid var(--del); flex: 1; }
+  .c .answer { margin: 18px 0 0; font-size: 16px; line-height: 24px; }
+  .c details { margin-top: 14px; border: 1.5px solid var(--rule); border-radius: 8px; }
+  .c details summary { min-height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; cursor: pointer; font-weight: 700; list-style: none; }
+  .c details summary::-webkit-details-marker { display: none; }
+  .c details summary .n { font-family: "JetBrains Mono", monospace; font-size: 13px; font-weight: 600; }
+  .c details summary .n .a { color: var(--add); } .c details summary .n .d { color: var(--del); }
+  .c details pre { margin: 0; font-size: 12.5px; line-height: 20px; border-top: 1.5px solid var(--rule); }
+  .c details pre span { display: block; padding: 0 12px; white-space: pre; }
+  .c details .a { color: var(--add); background: #E4F2EA; } .c details .d { color: var(--del); background: #F9E6E3; } .c details .x { color: var(--pencil); }
+  .c .compose { display: flex; gap: 8px; padding: 10px 12px 18px; border-top: 3px solid var(--graphite); background: var(--chalk); }
+  .c .compose input { flex: 1; min-height: 48px; border: 2px solid var(--graphite); border-radius: 8px; padding: 0 14px; font: 16px "Atkinson Hyperlegible", sans-serif; background: #fff; }
+  .c .compose .stop { min-height: 48px; padding: 0 14px; border-radius: 8px; border: 2px solid var(--del); background: #fff; color: var(--del); font-weight: 700; cursor: pointer; }
+
+  .label-under { position: absolute; left: 0; right: 0; bottom: -36px; text-align: center; font: 600 14px system-ui, sans-serif; color: #2B3238; }
+  .wrap { position: relative; }
+  @media (max-width: 480px) { .label-under { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- ============ Hướng B ============ -->
+<div class="wrap">
+<main class="device b" aria-label="Hướng B: Ca đêm">
+  <header class="top">
+    <button class="icon" type="button" aria-label="Quay lại danh sách session"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div class="t"><h1>Sửa lỗi reconnect SSE</h1><p>Máy công ty <code>~/src/adroidClient</code></p></div>
+    <button class="icon" type="button" aria-label="Xem diff của session"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3v12M18 9v12M6 21a3 3 0 100-6 3 3 0 000 6zM18 9a3 3 0 100-6 3 3 0 000 6zM6 15c0-5 12-1 12-6"/></svg></button>
+  </header>
+  <section class="feed" aria-label="Lịch sử hội thoại">
+    <p class="you">App mất kết nối khi chuyển sang nền rồi mở lại thì không tự đồng bộ. Tìm nguyên nhân và sửa giúp mình.</p>
+    <ol class="rail" aria-label="Các bước agent">
+      <li class="done"><details><summary>Suy luận trong 18 giây</summary><p>Khi app vào nền, SSE bị đóng nhưng generation cũ vẫn giữ callback. Event trễ ghi đè snapshot mới.</p></details></li>
+      <li class="done">Đọc <code>OpenCodeSyncCoordinator.kt</code><span class="small">0,4 giây</span></li>
+      <li class="done">Tìm <code>connectionGeneration</code> trong 6 file<span class="small">1,1 giây</span></li>
+      <li class="done">Sửa <code>OpenCodeSyncCoordinator.kt</code>
+        <div class="diff" aria-label="Thay đổi trong OpenCodeSyncCoordinator.kt">
+          <header><span class="mono">OpenCodeSyncCoordinator.kt</span><span>+5 −1</span></header>
+          <pre><span class="d">-   reducer.apply(event)</span><span class="a">+   if (event.generation != current) {</span><span class="a">+       log.d("drop stale event")</span><span class="a">+       return</span><span class="a">+   }</span><span class="a">+   reducer.apply(event)</span></pre>
+        </div>
+      </li>
+      <li class="lamp" id="b-step">
+        <div class="ask" id="b-ask" role="group" aria-labelledby="b-ask-title">
+          <h2 id="b-ask-title">Chờ bạn cho phép chạy lệnh</h2>
+          <p>Để kiểm tra bản sửa. Lệnh chạy trên máy công ty.</p>
+          <pre>$ ./gradlew testDebugUnitTest</pre>
+          <div class="acts">
+            <button class="go" type="button" data-b="Đang chạy unit test">Cho phép</button>
+            <button class="al" type="button" data-b="Đang chạy unit test (luôn cho phép)">Luôn</button>
+            <button class="no" type="button" data-b="Đã từ chối chạy test">Từ chối</button>
+          </div>
+        </div>
+        <span id="b-result" hidden></span>
+      </li>
+    </ol>
+  </section>
+  <form class="compose" onsubmit="return false">
+    <label class="sr" for="b-in">Nhắn cho agent</label>
+    <input id="b-in" placeholder="Nhắn cho agent…">
+    <button class="stop" type="button">Dừng</button>
+  </form>
+</main>
+<span class="label-under">B · Ca đêm</span>
+</div>
+
+<!-- ============ Hướng C ============ -->
+<div class="wrap">
+<main class="device c" aria-label="Hướng C: Bảng kiểm">
+  <header class="top">
+    <div class="row">
+      <button class="back" type="button" aria-label="Quay lại danh sách session"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <h1>Sửa lỗi reconnect SSE</h1>
+    </div>
+    <p>Máy công ty · <code>~/src/adroidClient</code></p>
+    <div class="progress" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="flag" id="c-bar"></i></div>
+    <p class="progress-label" id="c-progress">3 trên 4 bước xong, 1 bước cần bạn duyệt</p>
+  </header>
+  <section class="feed" aria-label="Lịch sử hội thoại">
+    <p class="asked">“App mất kết nối khi chuyển sang nền rồi mở lại thì không tự đồng bộ. Tìm nguyên nhân và sửa giúp mình.”</p>
+    <p class="asked-meta">Bạn gửi lúc 14:02</p>
+    <ol class="steps" aria-label="Các bước agent">
+      <li class="done"><span class="box" aria-label="Xong">✓</span><span>Đọc <code>OpenCodeSyncCoordinator.kt</code></span></li>
+      <li class="done"><span class="box" aria-label="Xong">✓</span><span>Tìm <code>connectionGeneration</code> trong 6 file</span></li>
+      <li class="done"><span class="box" aria-label="Xong">✓</span><span>Sửa <code>OpenCodeSyncCoordinator.kt</code><span class="sub">Bỏ qua event đến từ kết nối cũ</span></span></li>
+      <li class="wait" id="c-step"><span class="box" id="c-box" aria-label="Chờ duyệt"></span>
+        <div>
+          <strong id="c-title">Chạy unit test: cần bạn cho phép</strong>
+          <div id="c-ask">
+            <pre>$ ./gradlew testDebugUnitTest</pre>
+            <div class="acts">
+              <button class="go" type="button" data-c="ok">Cho phép lần này</button>
+              <button class="al" type="button" data-c="always">Luôn cho phép</button>
+              <button class="no" type="button" data-c="no">Từ chối</button>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ol>
+    <p class="answer">Mình đã thêm kiểm tra generation trước khi ghi event vào Room. Event đến từ kết nối cũ giờ bị bỏ qua.</p>
+    <details>
+      <summary>Xem thay đổi <span class="n"><span class="a">+5</span> <span class="d">−1</span></span></summary>
+      <pre><span class="x">  suspend fun onEvent(event: SseEvent) {</span><span class="d">-     reducer.apply(event)</span><span class="a">+     if (event.generation != current) {</span><span class="a">+         log.d("drop stale event")</span><span class="a">+         return</span><span class="a">+     }</span><span class="a">+     reducer.apply(event)</span><span class="x">  }</span></pre>
+    </details>
+  </section>
+  <form class="compose" onsubmit="return false">
+    <label class="sr" for="c-in">Nhắn cho agent</label>
+    <input id="c-in" placeholder="Nhắn cho agent…">
+    <button class="stop" type="button">Dừng agent</button>
+  </form>
+</main>
+<span class="label-under">C · Bảng kiểm</span>
+</div>
+
+<script>
+  // Hướng B
+  document.querySelectorAll('[data-b]').forEach((btn) => btn.addEventListener('click', () => {
+    document.getElementById('b-ask').hidden = true;
+    const r = document.getElementById('b-result');
+    r.hidden = false; r.textContent = btn.dataset.b;
+    const step = document.getElementById('b-step');
+    step.classList.remove('lamp');
+    r.setAttribute('role', 'status');
+    document.getElementById('b-in').focus();
+  }));
+  // Hướng C
+  document.querySelectorAll('[data-c]').forEach((btn) => btn.addEventListener('click', () => {
+    const v = btn.dataset.c;
+    document.getElementById('c-ask').hidden = true;
+    const step = document.getElementById('c-step');
+    step.classList.remove('wait');
+    const box = document.getElementById('c-box');
+    const title = document.getElementById('c-title');
+    const bar = document.getElementById('c-bar');
+    const progress = document.getElementById('c-progress');
+    if (v === 'no') {
+      box.textContent = '✕'; box.setAttribute('aria-label', 'Đã từ chối');
+      title.textContent = 'Chạy unit test: bạn đã từ chối';
+      bar.className = ''; progress.textContent = '3 trên 4 bước xong, 1 bước bị từ chối';
+    } else {
+      box.setAttribute('aria-label', 'Đang chạy'); box.style.borderColor = 'var(--teal)';
+      title.textContent = v === 'always' ? 'Chạy unit test: đang chạy (luôn cho phép)' : 'Chạy unit test: đang chạy';
+      bar.className = ''; progress.textContent = '3 trên 4 bước xong, đang chạy bước cuối';
+    }
+    title.setAttribute('role', 'status');
+    document.getElementById('c-in').focus();
+  }));
+</script>
+</body>
+</html>
