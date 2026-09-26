@@ -31,7 +31,9 @@ class OpenCodeBrowseViewModel @Inject constructor(
     private val _loading = MutableStateFlow(false)
     val loading = _loading.asStateFlow()
     private var job: Job? = null
+    private var streamJob: Job? = null
     private var generation = 0L
+    private var scopeGeneration = 0L
     private var sessionLimit = 100
 
     fun moreSessions() {
@@ -48,6 +50,8 @@ class OpenCodeBrowseViewModel @Inject constructor(
                 val next = revisions[serverId]
                 if (initialized && next != previous) {
                     job?.cancel()
+                    streamJob?.cancel()
+                    ++scopeGeneration
                     ++generation
                     _data.value = OpenCodeBrowseData(locked = true)
                     _loading.value = false
@@ -59,6 +63,8 @@ class OpenCodeBrowseViewModel @Inject constructor(
     }
 
     fun project(path: String) {
+        streamJob?.cancel()
+        ++scopeGeneration
         directory = path
         sessionId = null
         sessionLimit = 100
@@ -66,13 +72,18 @@ class OpenCodeBrowseViewModel @Inject constructor(
     }
     fun session(id: String) {
         sessionId = id
+        ++scopeGeneration
         refresh()
+        startStream()
     }
     fun up(): Boolean {
         if (sessionId != null) {
             sessionId = null
+            streamJob?.cancel()
+            ++scopeGeneration
         } else if (directory != null) {
             directory = null
+            ++scopeGeneration
         } else {
             return false
         }
@@ -106,6 +117,19 @@ class OpenCodeBrowseViewModel @Inject constructor(
             }
         }
     }
+    private fun startStream() {
+        streamJob?.cancel()
+        val dir = directory ?: return
+        val session = sessionId ?: return
+        val streamGeneration = scopeGeneration
+        streamJob = viewModelScope.launch {
+            repository.events(serverId, dir) { event ->
+                viewModelScope.launch {
+                    if (streamGeneration == scopeGeneration && (event.sessionId == null || event.sessionId == session) && sessionId == session && directory == dir) refresh()
+                }
+            }
+        }
+    }
     fun mutate(id: String, title: String?) {
         if (_loading.value) return
         val dir = directory ?: return
@@ -124,5 +148,50 @@ class OpenCodeBrowseViewModel @Inject constructor(
                 if (current == generation) _loading.value = false
             }
         }
+    }
+    fun prompt(content: String) {
+        if (_loading.value) return
+        val dir = directory ?: return
+        val session = sessionId ?: return
+        _loading.value = true
+        val current = ++generation
+        job = viewModelScope.launch {
+            try {
+                val error = repository.prompt(serverId, dir, session, content)
+                if (current != generation) return@launch
+                if (error == null) refresh() else _data.value = _data.value.copy(error = error)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (current == generation) _data.value = _data.value.copy(error = "Prompt outcome uncertain; refresh before sending again")
+            } finally {
+                if (current == generation) _loading.value = false
+            }
+        }
+    }
+    fun abort() {
+        if (_loading.value) return
+        val dir = directory ?: return
+        val session = sessionId ?: return
+        _loading.value = true
+        val current = ++generation
+        job = viewModelScope.launch {
+            try {
+                val error = repository.abort(serverId, dir, session)
+                if (current != generation) return@launch
+                if (error == null) refresh() else _data.value = _data.value.copy(error = error)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (current == generation) _data.value = _data.value.copy(error = "Abort outcome uncertain; refresh session status")
+            } finally {
+                if (current == generation) _loading.value = false
+            }
+        }
+    }
+
+    override fun onCleared() {
+        streamJob?.cancel()
+        super.onCleared()
     }
 }

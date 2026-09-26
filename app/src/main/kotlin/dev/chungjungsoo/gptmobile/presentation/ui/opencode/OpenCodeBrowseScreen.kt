@@ -37,6 +37,7 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
     var mutation by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var title by remember { mutableStateOf("") }
     var pendingInfo by remember { mutableStateOf(false) }
+    var prompt by remember { mutableStateOf("") }
     val back = { if (!viewModel.up()) onBack() }
     BackHandler(onBack = back)
     mutation?.let { (id, deleting) ->
@@ -106,6 +107,22 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
                             if (expanded && text.length > 64000) Text("Preview limited to 64,000 characters; full content is available on desktop.")
                             if (text.length > 4000 && !expanded) TextButton(onClick = { expanded = true }) { Text("Show more") }
                         }
+                    }
+                }
+            }
+            items(data.prompts, key = { it.clientMessageId }) { pending ->
+                Text("Prompt ${pending.state.lowercase()}: ${pending.content.take(240)}")
+                pending.uncertainty?.let { Text(it) }
+            }
+            if (viewModel.sessionId != null) {
+                item {
+                    OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("Send prompt") }, enabled = !loading && !data.stale)
+                    Row {
+                        Button(enabled = prompt.isNotBlank() && !loading && !data.stale, onClick = {
+                            viewModel.prompt(prompt)
+                            prompt = ""
+                        }) { Text("Send") }
+                        TextButton(enabled = !loading && !data.stale, onClick = viewModel::abort) { Text("Stop agent") }
                     }
                 }
             }

@@ -33,6 +33,7 @@ sealed interface OpenCodeReadResult {
     data object Timeout : OpenCodeReadResult
     data object TlsFailure : OpenCodeReadResult
     data object StaleScope : OpenCodeReadResult
+    data class Accepted(val status: Int) : OpenCodeReadResult
 }
 
 /** Read-only transport. Mutation and persistence require a scope/revision coordinator. */
@@ -57,7 +58,10 @@ class OpenCodeReadApi(
         return request(profile, segments, directory, method, json, null, null)
     }
 
-    private suspend fun request(profile: OpenCodeServerProfile, segments: List<String>, directory: String?, method: String, payload: String?, limit: Int?, before: String?): OpenCodeReadResult = withContext(Dispatchers.IO) {
+    /** POST actions are deliberately non-retrying; callers must model uncertain outcomes. */
+    suspend fun post(profile: OpenCodeServerProfile, segments: List<String>, directory: String, json: String, expectedStatus: Int): OpenCodeReadResult = request(profile, segments, directory, "POST", json, null, null, setOf(expectedStatus))
+
+    private suspend fun request(profile: OpenCodeServerProfile, segments: List<String>, directory: String?, method: String, payload: String?, limit: Int?, before: String?, expectedStatuses: Set<Int> = setOf(200)): OpenCodeReadResult = withContext(Dispatchers.IO) {
         require(segments.isNotEmpty() && segments.all { it.isNotBlank() && it != "." && it != ".." && '/' !in it && '\\' !in it })
         require(limit == null || limit > 0)
         val canonical = policy.canonicalize(profile.baseUrl)
@@ -77,10 +81,10 @@ class OpenCodeReadApi(
         val request = Request.Builder().url(url).header("Accept", "application/json")
             .header("Authorization", Credentials.basic(credential.username, credential.password))
             .method(method, payload?.toRequestBody("application/json".toMediaType())).build()
-        execute(request)
+        execute(request, expectedStatuses)
     }
 
-    private suspend fun execute(request: Request): OpenCodeReadResult = suspendCancellableCoroutine { continuation ->
+    private suspend fun execute(request: Request, expectedStatuses: Set<Int>): OpenCodeReadResult = suspendCancellableCoroutine { continuation ->
         val call = http.newCall(request)
         continuation.invokeOnCancellation { call.cancel() }
         call.enqueue(object : Callback {
@@ -90,7 +94,7 @@ class OpenCodeReadApi(
 
             override fun onResponse(call: Call, response: Response) {
                 try {
-                    continuation.resume(response.use { readResponse(it) })
+                    continuation.resume(response.use { readResponse(it, expectedStatuses) })
                 } catch (error: IOException) {
                     continuation.resume(classify(error))
                 } catch (error: Exception) {
@@ -106,8 +110,9 @@ class OpenCodeReadApi(
         else -> OpenCodeReadResult.NetworkFailure
     }
 
-    private fun readResponse(response: Response): OpenCodeReadResult {
-        if (response.code != 200) return OpenCodeReadResult.HttpFailure(response.code)
+    private fun readResponse(response: Response, expectedStatuses: Set<Int>): OpenCodeReadResult {
+        if (response.code !in expectedStatuses) return OpenCodeReadResult.HttpFailure(response.code)
+        if (response.code == 204) return OpenCodeReadResult.Accepted(response.code)
         val body = response.body ?: return OpenCodeReadResult.InvalidResponse
         if (body.contentType()?.subtype != "json") return OpenCodeReadResult.InvalidResponse
         if (body.contentLength() > maxBytes) return OpenCodeReadResult.TooLarge
