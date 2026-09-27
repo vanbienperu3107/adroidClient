@@ -31,3 +31,6 @@ app/build/**
 
 # Codebase memory index
 /.codebase-memory/
+
+# CodeGraph index
+/.codegraph/
