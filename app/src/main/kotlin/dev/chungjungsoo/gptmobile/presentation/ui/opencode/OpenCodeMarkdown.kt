@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 
 /** Conservative block Markdown subset: never loads images or executes HTML. */
 @Composable
-internal fun OpenCodeMarkdown(text: String) {
+fun OpenCodeMarkdown(text: String) {
     Column {
         var code = false
         text.lines().forEach { line ->

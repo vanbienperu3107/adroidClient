@@ -6,6 +6,7 @@ import dev.chungjungsoo.gptmobile.data.datastore.SettingDataSource
 import dev.chungjungsoo.gptmobile.data.dto.Platform
 import dev.chungjungsoo.gptmobile.data.dto.ThemeSetting
 import dev.chungjungsoo.gptmobile.data.model.ApiType
+import dev.chungjungsoo.gptmobile.data.model.ChatStartDestination
 import dev.chungjungsoo.gptmobile.data.model.DynamicTheme
 import dev.chungjungsoo.gptmobile.data.model.ThemeMode
 import javax.inject.Inject
@@ -74,5 +75,11 @@ class SettingRepositoryImpl @Inject constructor(
     override suspend fun updateThemes(themeSetting: ThemeSetting) {
         settingDataSource.updateDynamicTheme(themeSetting.dynamicTheme)
         settingDataSource.updateThemeMode(themeSetting.themeMode)
+    }
+
+    override suspend fun fetchChatStartDestination(): ChatStartDestination = settingDataSource.getChatStartDestination()
+
+    override suspend fun updateChatStartDestination(destination: ChatStartDestination) {
+        settingDataSource.updateChatStartDestination(destination)
     }
 }

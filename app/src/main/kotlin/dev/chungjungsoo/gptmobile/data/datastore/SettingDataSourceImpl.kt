@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dev.chungjungsoo.gptmobile.data.model.ApiType
+import dev.chungjungsoo.gptmobile.data.model.ChatStartDestination
 import dev.chungjungsoo.gptmobile.data.model.DynamicTheme
 import dev.chungjungsoo.gptmobile.data.model.ThemeMode
 import javax.inject.Inject
@@ -68,6 +69,7 @@ class SettingDataSourceImpl @Inject constructor(
     )
     private val dynamicThemeKey = intPreferencesKey("dynamic_mode")
     private val themeModeKey = intPreferencesKey("theme_mode")
+    private val chatStartDestinationKey = stringPreferencesKey("chat_start_destination")
 
     override suspend fun updateDynamicTheme(theme: DynamicTheme) {
         dataStore.edit { pref ->
@@ -123,6 +125,10 @@ class SettingDataSourceImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateChatStartDestination(destination: ChatStartDestination) {
+        dataStore.edit { pref -> pref[chatStartDestinationKey] = destination.name }
+    }
+
     override suspend fun getDynamicTheme(): DynamicTheme? {
         val mode = dataStore.data.map { pref ->
             pref[dynamicThemeKey]
@@ -165,5 +171,9 @@ class SettingDataSourceImpl @Inject constructor(
 
     override suspend fun getSystemPrompt(apiType: ApiType): String? = dataStore.data.map { pref ->
         pref[apiSystemPromptMap[apiType]!!]
+    }.first()
+
+    override suspend fun getChatStartDestination(): ChatStartDestination = dataStore.data.map { pref ->
+        ChatStartDestination.fromStored(pref[chatStartDestinationKey])
     }.first()
 }

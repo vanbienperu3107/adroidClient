@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.chungjungsoo.gptmobile.data.opencode.CachedOpenCodeInteraction
+import dev.chungjungsoo.gptmobile.presentation.ui.chat.RichChatContent
 import dev.chungjungsoo.gptmobile.util.collectManagedState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,7 +192,7 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
                         val text = part.text ?: "[${part.type}]"
                         if (part.type == "reasoning") TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Hide reasoning" else "Show reasoning") }
                         if (part.type != "reasoning" || expanded) {
-                            OpenCodeMarkdown(if (expanded) text.take(64000) else text.take(4000))
+                            RichChatContent(if (expanded) text.take(64000) else text.take(4000))
                             if (expanded && text.length > 64000) Text("Preview limited to 64,000 characters; full content is available on desktop.")
                             if (text.length > 4000 && !expanded) TextButton(onClick = { expanded = true }) { Text("Show more") }
                         }
@@ -233,7 +234,7 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
             data.diff?.let { diff ->
                 item {
                     Text("Diff preview")
-                    OpenCodeMarkdown(diff.take(64_000))
+                    RichChatContent(diff.take(64_000))
                     if (diff.length > 64_000) Text("Preview limited to 64,000 characters.")
                 }
             }
