@@ -54,6 +54,9 @@ class ChatViewModel @Inject constructor(
     private val _openaiLoadingState = MutableStateFlow<LoadingState>(LoadingState.Idle)
     val openaiLoadingState = _openaiLoadingState.asStateFlow()
 
+    private val _cliproxyLoadingState = MutableStateFlow<LoadingState>(LoadingState.Idle)
+    val cliproxyLoadingState = _cliproxyLoadingState.asStateFlow()
+
     private val _anthropicLoadingState = MutableStateFlow<LoadingState>(LoadingState.Idle)
     val anthropicLoadingState = _anthropicLoadingState.asStateFlow()
 
@@ -80,6 +83,9 @@ class ChatViewModel @Inject constructor(
     private val _openAIMessage = MutableStateFlow(Message(chatId = chatRoomId, content = "", platformType = ApiType.OPENAI))
     val openAIMessage = _openAIMessage.asStateFlow()
 
+    private val _cliproxyMessage = MutableStateFlow(Message(chatId = chatRoomId, content = "", platformType = ApiType.CLIPROXY))
+    val cliproxyMessage = _cliproxyMessage.asStateFlow()
+
     private val _anthropicMessage = MutableStateFlow(Message(chatId = chatRoomId, content = "", platformType = ApiType.ANTHROPIC))
     val anthropicMessage = _anthropicMessage.asStateFlow()
 
@@ -91,6 +97,7 @@ class ChatViewModel @Inject constructor(
 
     // Flows for assistant message streams
     private val openAIFlow = MutableSharedFlow<ApiState>()
+    private val cliproxyFlow = MutableSharedFlow<ApiState>()
     private val anthropicFlow = MutableSharedFlow<ApiState>()
     private val googleFlow = MutableSharedFlow<ApiState>()
     private val ollamaFlow = MutableSharedFlow<ApiState>()
@@ -140,6 +147,11 @@ class ChatViewModel @Inject constructor(
                 completeOpenAIChat()
             }
 
+            ApiType.CLIPROXY -> {
+                _cliproxyMessage.update { it.copy(id = message.id, content = "", createdAt = currentTimeStamp) }
+                completeCliproxyChat()
+            }
+
             ApiType.ANTHROPIC -> {
                 _anthropicMessage.update { it.copy(id = message.id, content = "", createdAt = currentTimeStamp) }
                 completeAnthropicChat()
@@ -166,6 +178,7 @@ class ChatViewModel @Inject constructor(
     private fun clearQuestionAndAnswers() {
         _userMessage.update { it.copy(id = 0, content = "") }
         _openAIMessage.update { it.copy(id = 0, content = "") }
+        _cliproxyMessage.update { it.copy(id = 0, content = "") }
         _anthropicMessage.update { it.copy(id = 0, content = "") }
         _googleMessage.update { it.copy(id = 0, content = "") }
         _ollamaMessage.update { it.copy(id = 0, content = "") }
@@ -177,6 +190,9 @@ class ChatViewModel @Inject constructor(
 
         if (ApiType.OPENAI in enabledPlatforms) {
             completeOpenAIChat()
+        }
+        if (ApiType.CLIPROXY in enabledPlatforms) {
+            completeCliproxyChat()
         }
 
         if (ApiType.ANTHROPIC in enabledPlatforms) {
@@ -217,6 +233,12 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             val chatFlow = chatRepository.completeOpenAIChat(question = _userMessage.value, history = _messages.value)
             chatFlow.collect { chunk -> openAIFlow.emit(chunk) }
+        }
+    }
+
+    private fun completeCliproxyChat() {
+        viewModelScope.launch {
+            chatRepository.completeCliproxyChat(_userMessage.value, _messages.value).collect { cliproxyFlow.emit(it) }
         }
     }
 
@@ -269,6 +291,23 @@ class ChatViewModel @Inject constructor(
                         updateLoadingState(ApiType.OPENAI, LoadingState.Idle)
                     }
 
+                    else -> {}
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            cliproxyFlow.collect { chunk ->
+                when (chunk) {
+                    is ApiState.Success -> _cliproxyMessage.update { it.copy(content = it.content + chunk.textChunk) }
+                    ApiState.Done -> {
+                        _cliproxyMessage.update { it.copy(createdAt = currentTimeStamp) }
+                        updateLoadingState(ApiType.CLIPROXY, LoadingState.Idle)
+                    }
+                    is ApiState.Error -> {
+                        _cliproxyMessage.update { it.copy(content = chunk.message, createdAt = currentTimeStamp) }
+                        updateLoadingState(ApiType.CLIPROXY, LoadingState.Idle)
+                    }
                     else -> {}
                 }
             }
@@ -354,6 +393,7 @@ class ChatViewModel @Inject constructor(
         val message = previousAnswers.firstOrNull { it.platformType == apiType }
         val retryingState = when (apiType) {
             ApiType.OPENAI -> _openaiLoadingState
+            ApiType.CLIPROXY -> _cliproxyLoadingState
             ApiType.ANTHROPIC -> _anthropicLoadingState
             ApiType.GOOGLE -> _googleLoadingState
             ApiType.OLLAMA -> _ollamaLoadingState
@@ -364,6 +404,7 @@ class ChatViewModel @Inject constructor(
 
         when (apiType) {
             ApiType.OPENAI -> _openAIMessage.update { message }
+            ApiType.CLIPROXY -> _cliproxyMessage.update { message }
             ApiType.ANTHROPIC -> _anthropicMessage.update { message }
             ApiType.GOOGLE -> _googleMessage.update { message }
             ApiType.OLLAMA -> _ollamaMessage.update { message }
@@ -376,6 +417,9 @@ class ChatViewModel @Inject constructor(
 
         if (ApiType.OPENAI in enabledPlatforms) {
             addMessage(_openAIMessage.value)
+        }
+        if (ApiType.CLIPROXY in enabledPlatforms) {
+            addMessage(_cliproxyMessage.value)
         }
 
         if (ApiType.ANTHROPIC in enabledPlatforms) {
@@ -394,6 +438,7 @@ class ChatViewModel @Inject constructor(
     private fun updateLoadingState(apiType: ApiType, loadingState: LoadingState) {
         when (apiType) {
             ApiType.OPENAI -> _openaiLoadingState.update { loadingState }
+            ApiType.CLIPROXY -> _cliproxyLoadingState.update { loadingState }
             ApiType.ANTHROPIC -> _anthropicLoadingState.update { loadingState }
             ApiType.GOOGLE -> _googleLoadingState.update { loadingState }
             ApiType.OLLAMA -> _ollamaLoadingState.update { loadingState }
@@ -403,6 +448,7 @@ class ChatViewModel @Inject constructor(
         enabledPlatformsInChat.forEach {
             val state = when (it) {
                 ApiType.OPENAI -> _openaiLoadingState
+                ApiType.CLIPROXY -> _cliproxyLoadingState
                 ApiType.ANTHROPIC -> _anthropicLoadingState
                 ApiType.GOOGLE -> _googleLoadingState
                 ApiType.OLLAMA -> _ollamaLoadingState

@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dev.chungjungsoo.gptmobile.data.model.ApiType
+import dev.chungjungsoo.gptmobile.data.model.ChatStartDestination
 import dev.chungjungsoo.gptmobile.data.model.DynamicTheme
 import dev.chungjungsoo.gptmobile.data.model.ThemeMode
 import javax.inject.Inject
@@ -19,48 +20,56 @@ class SettingDataSourceImpl @Inject constructor(
 ) : SettingDataSource {
     private val apiStatusMap = mapOf(
         ApiType.OPENAI to booleanPreferencesKey("openai_status"),
+        ApiType.CLIPROXY to booleanPreferencesKey("cliproxy_unused_status"),
         ApiType.ANTHROPIC to booleanPreferencesKey("anthropic_status"),
         ApiType.GOOGLE to booleanPreferencesKey("google_status"),
         ApiType.OLLAMA to booleanPreferencesKey("ollama_status")
     )
     private val apiUrlMap = mapOf(
         ApiType.OPENAI to stringPreferencesKey("openai_url"),
+        ApiType.CLIPROXY to stringPreferencesKey("cliproxy_unused_url"),
         ApiType.ANTHROPIC to stringPreferencesKey("anthropic_url"),
         ApiType.GOOGLE to stringPreferencesKey("google_url"),
         ApiType.OLLAMA to stringPreferencesKey("ollama_url")
     )
     private val apiTokenMap = mapOf(
         ApiType.OPENAI to stringPreferencesKey("openai_token"),
+        ApiType.CLIPROXY to stringPreferencesKey("cliproxy_unused_token"),
         ApiType.ANTHROPIC to stringPreferencesKey("anthropic_token"),
         ApiType.GOOGLE to stringPreferencesKey("google_token"),
         ApiType.OLLAMA to stringPreferencesKey("ollama_token")
     )
     private val apiModelMap = mapOf(
         ApiType.OPENAI to stringPreferencesKey("openai_model"),
+        ApiType.CLIPROXY to stringPreferencesKey("cliproxy_unused_model"),
         ApiType.ANTHROPIC to stringPreferencesKey("anthropic_model"),
         ApiType.GOOGLE to stringPreferencesKey("google_model"),
         ApiType.OLLAMA to stringPreferencesKey("ollama_model")
     )
     private val apiTemperatureMap = mapOf(
         ApiType.OPENAI to floatPreferencesKey("openai_temperature"),
+        ApiType.CLIPROXY to floatPreferencesKey("cliproxy_unused_temperature"),
         ApiType.ANTHROPIC to floatPreferencesKey("anthropic_temperature"),
         ApiType.GOOGLE to floatPreferencesKey("google_temperature"),
         ApiType.OLLAMA to floatPreferencesKey("ollama_temperature")
     )
     private val apiTopPMap = mapOf(
         ApiType.OPENAI to floatPreferencesKey("openai_top_p"),
+        ApiType.CLIPROXY to floatPreferencesKey("cliproxy_unused_top_p"),
         ApiType.ANTHROPIC to floatPreferencesKey("anthropic_top_p"),
         ApiType.GOOGLE to floatPreferencesKey("google_top_p"),
         ApiType.OLLAMA to floatPreferencesKey("ollama_top_p")
     )
     private val apiSystemPromptMap = mapOf(
         ApiType.OPENAI to stringPreferencesKey("openai_system_prompt"),
+        ApiType.CLIPROXY to stringPreferencesKey("cliproxy_unused_system_prompt"),
         ApiType.ANTHROPIC to stringPreferencesKey("anthropic_system_prompt"),
         ApiType.GOOGLE to stringPreferencesKey("google_system_prompt"),
         ApiType.OLLAMA to stringPreferencesKey("ollama_system_prompt")
     )
     private val dynamicThemeKey = intPreferencesKey("dynamic_mode")
     private val themeModeKey = intPreferencesKey("theme_mode")
+    private val chatStartDestinationKey = stringPreferencesKey("chat_start_destination")
 
     override suspend fun updateDynamicTheme(theme: DynamicTheme) {
         dataStore.edit { pref ->
@@ -116,6 +125,10 @@ class SettingDataSourceImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateChatStartDestination(destination: ChatStartDestination) {
+        dataStore.edit { pref -> pref[chatStartDestinationKey] = destination.name }
+    }
+
     override suspend fun getDynamicTheme(): DynamicTheme? {
         val mode = dataStore.data.map { pref ->
             pref[dynamicThemeKey]
@@ -158,5 +171,9 @@ class SettingDataSourceImpl @Inject constructor(
 
     override suspend fun getSystemPrompt(apiType: ApiType): String? = dataStore.data.map { pref ->
         pref[apiSystemPromptMap[apiType]!!]
+    }.first()
+
+    override suspend fun getChatStartDestination(): ChatStartDestination = dataStore.data.map { pref ->
+        ChatStartDestination.fromStored(pref[chatStartDestinationKey])
     }.first()
 }

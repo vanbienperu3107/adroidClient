@@ -88,6 +88,7 @@ fun PlatformSettingScreen(
             val topP = platform?.topP
             val systemPrompt = platform?.systemPrompt ?: when (apiType) {
                 ApiType.OPENAI -> ModelConstants.OPENAI_PROMPT
+                ApiType.CLIPROXY -> ModelConstants.OPENAI_PROMPT
                 ApiType.ANTHROPIC -> ModelConstants.DEFAULT_PROMPT
                 ApiType.GOOGLE -> ModelConstants.DEFAULT_PROMPT
                 ApiType.OLLAMA -> ModelConstants.DEFAULT_PROMPT

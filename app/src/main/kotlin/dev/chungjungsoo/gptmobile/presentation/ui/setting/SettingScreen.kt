@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.chungjungsoo.gptmobile.R
 import dev.chungjungsoo.gptmobile.data.model.ApiType
+import dev.chungjungsoo.gptmobile.data.model.ChatStartDestination
 import dev.chungjungsoo.gptmobile.data.model.DynamicTheme
 import dev.chungjungsoo.gptmobile.data.model.ThemeMode
 import dev.chungjungsoo.gptmobile.presentation.common.LocalDynamicTheme
@@ -52,6 +53,7 @@ fun SettingScreen(
     onNavigationClick: () -> Unit,
     onNavigateToOpenCode: () -> Unit,
     onNavigateToPlatformSetting: (ApiType) -> Unit,
+    onNavigateToCliproxy: () -> Unit,
     onNavigateToAboutPage: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -59,6 +61,7 @@ fun SettingScreen(
         canScroll = { scrollState.canScrollForward || scrollState.canScrollBackward }
     )
     val dialogState by settingViewModel.dialogState.collectManagedState()
+    val chatStartDestination by settingViewModel.chatStartDestination.collectManagedState()
 
     Scaffold(
         modifier = modifier
@@ -75,8 +78,12 @@ fun SettingScreen(
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
         ) {
+            ChatStartDestinationSetting(
+                selected = chatStartDestination,
+                onSelect = settingViewModel::updateChatStartDestination
+            )
             ThemeSetting { settingViewModel.openThemeDialog() }
-            ApiType.entries.forEach { apiType ->
+            ApiType.entries.filterNot { it == ApiType.CLIPROXY }.forEach { apiType ->
                 SettingItem(
                     title = getPlatformSettingTitle(apiType),
                     description = getPlatformSettingDescription(apiType),
@@ -85,6 +92,13 @@ fun SettingScreen(
                     showLeadingIcon = false
                 )
             }
+            SettingItem(
+                title = "Cliproxy",
+                description = "Direct chat and model catalog",
+                onItemClick = onNavigateToCliproxy,
+                showTrailingIcon = true,
+                showLeadingIcon = false
+            )
             SettingItem(
                 title = "OpenCode servers",
                 description = "Connect to an OpenCode server",
@@ -98,6 +112,33 @@ fun SettingScreen(
                 ThemeSettingDialog(settingViewModel)
             }
         }
+    }
+}
+
+@Composable
+private fun ChatStartDestinationSetting(
+    selected: ChatStartDestination,
+    onSelect: (ChatStartDestination) -> Unit
+) {
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text("New chats start in", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Choose where the New chat action opens a conversation.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        RadioItem(
+            title = "OpenCode",
+            description = "Workspace sessions with tools and project files",
+            value = ChatStartDestination.OPEN_CODE.name,
+            selected = selected == ChatStartDestination.OPEN_CODE
+        ) { onSelect(ChatStartDestination.OPEN_CODE) }
+        RadioItem(
+            title = "Direct provider",
+            description = "A direct chat from this device",
+            value = ChatStartDestination.DIRECT.name,
+            selected = selected == ChatStartDestination.DIRECT
+        ) { onSelect(ChatStartDestination.DIRECT) }
     }
 }
 

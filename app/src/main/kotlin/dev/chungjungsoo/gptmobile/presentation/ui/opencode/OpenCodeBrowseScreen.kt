@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.chungjungsoo.gptmobile.data.opencode.CachedOpenCodeInteraction
+import dev.chungjungsoo.gptmobile.presentation.ui.chat.RichChatContent
 import dev.chungjungsoo.gptmobile.util.collectManagedState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,12 +37,17 @@ import dev.chungjungsoo.gptmobile.util.collectManagedState
 fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel = hiltViewModel()) {
     val data by viewModel.data.collectManagedState()
     val loading by viewModel.loading.collectManagedState()
+    val models by viewModel.models.collectManagedState()
+    val selectedModel by viewModel.selectedModel.collectManagedState()
+    val selectedVariant by viewModel.selectedVariant.collectManagedState()
     var mutation by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var title by remember { mutableStateOf("") }
     var pendingInfo by remember { mutableStateOf(false) }
     var prompt by remember { mutableStateOf("") }
     var interaction by remember { mutableStateOf<CachedOpenCodeInteraction?>(null) }
     var answer by remember { mutableStateOf("") }
+    var showModelPicker by remember { mutableStateOf(false) }
+    var showVariantPicker by remember { mutableStateOf(false) }
     val back = { if (!viewModel.up()) onBack() }
     BackHandler(onBack = back)
     mutation?.let { (id, deleting) ->
@@ -104,6 +111,46 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
             dismissButton = { TextButton(onClick = { interaction = null }) { Text("Cancel") } }
         )
     }
+    if (showModelPicker) {
+        AlertDialog(
+            onDismissRequest = { showModelPicker = false },
+            title = { Text("Choose model") },
+            text = {
+                Column {
+                    if (models.isEmpty()) Text("No server models loaded.")
+                    models.forEach { model ->
+                        TextButton(onClick = {
+                            viewModel.selectModel(model, null)
+                            showModelPicker = false
+                        }) { Text(model.name) }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { viewModel.loadModels() }) { Text("Refresh") } }
+        )
+    }
+    if (showVariantPicker) {
+        AlertDialog(
+            onDismissRequest = { showVariantPicker = false },
+            title = { Text("Reasoning level") },
+            text = {
+                Column {
+                    val model = selectedModel
+                    if (model == null || model.variants.isEmpty()) {
+                        Text("Server default")
+                    } else {
+                        model.variants.forEach { variant ->
+                            TextButton(onClick = {
+                                viewModel.selectModel(model, variant)
+                                showVariantPicker = false
+                            }) { Text(if (variant == selectedVariant) "✓ $variant" else variant) }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showVariantPicker = false }) { Text("Cancel") } }
+        )
+    }
     Scaffold(topBar = {
         TopAppBar(
             title = { Text("OpenCode · ${viewModel.sessionId ?: viewModel.directory ?: "Projects"}") },
@@ -145,7 +192,7 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
                         val text = part.text ?: "[${part.type}]"
                         if (part.type == "reasoning") TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Hide reasoning" else "Show reasoning") }
                         if (part.type != "reasoning" || expanded) {
-                            OpenCodeMarkdown(if (expanded) text.take(64000) else text.take(4000))
+                            RichChatContent(if (expanded) text.take(64000) else text.take(4000))
                             if (expanded && text.length > 64000) Text("Preview limited to 64,000 characters; full content is available on desktop.")
                             if (text.length > 4000 && !expanded) TextButton(onClick = { expanded = true }) { Text("Show more") }
                         }
@@ -175,12 +222,19 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
                         TextButton(enabled = !loading && !data.stale, onClick = viewModel::abort) { Text("Stop agent") }
                         TextButton(enabled = !loading && !data.stale, onClick = viewModel::diff) { Text("View diff") }
                     }
+                    Row {
+                        AssistChip(onClick = {
+                            viewModel.loadModels()
+                            showModelPicker = true
+                        }, label = { Text(selectedModel?.name ?: "Choose model") })
+                        AssistChip(onClick = { showVariantPicker = true }, label = { Text(selectedVariant ?: "Server default") })
+                    }
                 }
             }
             data.diff?.let { diff ->
                 item {
                     Text("Diff preview")
-                    OpenCodeMarkdown(diff.take(64_000))
+                    RichChatContent(diff.take(64_000))
                     if (diff.length > 64_000) Text("Preview limited to 64,000 characters.")
                 }
             }

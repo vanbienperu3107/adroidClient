@@ -57,6 +57,7 @@ fun SelectModelScreen(
     val description = getAPIModelSelectDescription(platformType)
     val availableModels = when (platformType) {
         ApiType.OPENAI -> generateOpenAIModelList(models = openaiModels)
+        ApiType.CLIPROXY -> emptyList()
         ApiType.ANTHROPIC -> generateAnthropicModelList(models = anthropicModels)
         ApiType.GOOGLE -> generateGoogleModelList(models = googleModels)
         ApiType.OLLAMA -> listOf()
@@ -67,6 +68,7 @@ fun SelectModelScreen(
                 platformType,
                 when (platformType) {
                     ApiType.OPENAI -> 0
+                    ApiType.CLIPROXY -> 0
                     ApiType.ANTHROPIC -> 0
                     ApiType.GOOGLE -> 1
                     ApiType.OLLAMA -> 0

@@ -280,12 +280,14 @@ private fun ModelDialog(
 ) {
     val modelList = when (apiType) {
         ApiType.OPENAI -> openaiModels
+        ApiType.CLIPROXY -> linkedSetOf()
         ApiType.ANTHROPIC -> anthropicModels
         ApiType.GOOGLE -> googleModels
         ApiType.OLLAMA -> ollamaModels
     }
     val availableModels = when (apiType) {
         ApiType.OPENAI -> generateOpenAIModelList(models = modelList)
+        ApiType.CLIPROXY -> emptyList()
         ApiType.ANTHROPIC -> generateAnthropicModelList(models = modelList)
         ApiType.GOOGLE -> generateGoogleModelList(models = modelList)
         ApiType.OLLAMA -> listOf()

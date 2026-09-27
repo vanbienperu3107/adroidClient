@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.chungjungsoo.gptmobile.data.opencode.CachedOpenCodeInteraction
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseData
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseRepository
+import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeModelOption
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeProfileRepository
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeReliableSyncCoordinator
 import javax.inject.Inject
@@ -25,14 +26,20 @@ class OpenCodeBrowseViewModel @Inject constructor(
     private val state: SavedStateHandle
 ) : ViewModel() {
     private val serverId = requireNotNull(state.get<String>("serverId"))
-    var directory: String? = state["selectedDirectory"]
+    var directory: String? = state["directory"] ?: state["selectedDirectory"]
         private set
-    var sessionId: String? = state["selectedSession"]
+    var sessionId: String? = state["session"] ?: state["selectedSession"]
         private set
     private val _data = MutableStateFlow(OpenCodeBrowseData())
     val data = _data.asStateFlow()
     private val _loading = MutableStateFlow(false)
     val loading = _loading.asStateFlow()
+    private val _models = MutableStateFlow(emptyList<OpenCodeModelOption>())
+    val models = _models.asStateFlow()
+    private val _selectedModel = MutableStateFlow<OpenCodeModelOption?>(null)
+    val selectedModel = _selectedModel.asStateFlow()
+    private val _selectedVariant = MutableStateFlow<String?>(null)
+    val selectedVariant = _selectedVariant.asStateFlow()
     private var loadJob: Job? = null
     private var actionJob: Job? = null
     private var generation = 0L
@@ -224,6 +231,29 @@ class OpenCodeBrowseViewModel @Inject constructor(
                 if (current == generation) _data.value = _data.value.copy(error = "Could not load diff")
             } finally {
                 if (current == generation) _loading.value = false
+            }
+        }
+    }
+
+    fun loadModels() {
+        val dir = directory ?: return
+        viewModelScope.launch {
+            val options = repository.models(serverId, dir)
+            _models.value = options
+            if (_selectedModel.value == null) _selectedModel.value = options.firstOrNull()
+        }
+    }
+
+    fun selectModel(model: OpenCodeModelOption, variant: String?) {
+        val dir = directory ?: return
+        val session = sessionId ?: return
+        actionJob = viewModelScope.launch {
+            val error = repository.selectModel(serverId, dir, session, model, variant)
+            if (error == null) {
+                _selectedModel.value = model
+                _selectedVariant.value = variant
+            } else {
+                _data.value = _data.value.copy(error = error)
             }
         }
     }

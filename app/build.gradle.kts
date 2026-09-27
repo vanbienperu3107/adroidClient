@@ -100,6 +100,7 @@ dependencies {
 
     // Markdown
     implementation(libs.compose.markdown)
+    implementation(libs.coil.compose)
 
     // Navigation
     implementation(libs.hilt.navigation)

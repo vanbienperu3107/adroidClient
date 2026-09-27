@@ -27,7 +27,8 @@ object Route {
     const val LICENSE = "license"
 
     const val OPEN_CODE_SERVERS = "opencode_servers"
-    const val OPEN_CODE_BROWSE = "opencode_browse/{serverId}"
+    const val OPEN_CODE_BROWSE = "opencode_browse/{serverId}?directory={directory}&session={session}"
     const val OPEN_CODE_SERVERS_SETTINGS = "opencode_servers_settings"
     const val OPEN_CODE_SERVER_EDIT = "opencode_server_edit?serverId={serverId}"
+    const val CLIPROXY_SETTINGS = "cliproxy_settings"
 }
