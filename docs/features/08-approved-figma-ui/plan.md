@@ -42,12 +42,12 @@ Approved review file: `https://www.figma.com/design/X5IJaFPvFc5O6DjZqEpfSM`.
 | ID | Status | Evidence |
 | --- | --- | --- |
 | F08-T01 | PASS local | `OpenCodeProfileRepositoryTest` rejects a canonical duplicate before a second vault credential is written. |
-| F08-T02 | NOT_RUN | Added to `OpenCodeCacheInstrumentedTest`; requires the API 34 KVM run. |
-| F08-T03 | NOT_RUN | Requires an API 34 KVM UI journey against the new Chats screen. |
-| F08-T04 | NOT_RUN | Requires manual live OpenCode emulator evidence after routing is merged. |
-| F08-T05 | NOT_RUN | Requires API 34 KVM UI journey. |
-| F08-T06 | NOT_RUN | Requires API 34 KVM UI journey for profile menu/default project/delete. |
-| F08-T07 | PARTIAL | KtLint, JVM tests and Kotlin compilation pass locally; debug APK/KVM/CI evidence pending final diff. |
+| F08-T02 | PASS KVM | API 34 instrumentation passed on PR SHA `24dde07`; cache order regression is included. |
+| F08-T03 | PASS KVM | API 34 instrumentation, debug APK and format/unit checks passed on PR SHA `24dde07`. |
+| F08-T04 | PASS KVM live read-only | Manual run `36447708338` passed health/project/model catalog checks on SHA `24dde07`. |
+| F08-T05 | PARTIAL | Direct chat local routing compiles and existing local history test suite passes; a visual direct-row UI journey remains required. |
+| F08-T06 | PARTIAL | Profile default project/delete behavior compiles and JVM duplicate/default project tests pass; a visual action-menu UI journey remains required. |
+| F08-T07 | PARTIAL | Local/PR debug APK, KVM and live read-only checks pass on `24dde07`; signed APK/AAB remains pending merge/tag release SHA. |
 
 ## Constraints
 
