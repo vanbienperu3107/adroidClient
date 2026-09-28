@@ -140,6 +140,39 @@ class OpenCodeProfileRepositoryTest {
     }
 
     @Test
+    fun duplicateCanonicalUrlIsRejectedBeforeWritingAnotherCredential() = runBlocking {
+        val original = repository.save(null, "First", "https://SERVER.test/", credential)
+        try {
+            repository.save(null, "Duplicate", "https://server.test", credential)
+            throw AssertionError("Expected duplicate URL rejection")
+        } catch (error: IllegalArgumentException) {
+            assertEquals("An OpenCode server with this HTTPS URL already exists", error.message)
+        }
+        assertEquals(listOf(original), repository.profiles())
+        assertEquals(setOf(original.credentialRef), vault.entries.keys)
+    }
+
+    @Test
+    fun editingAProfileKeepsItsOwnCanonicalUrlAndDefaultProject() = runBlocking {
+        val original = repository.save(null, "First", "https://server.test", credential)
+        repository.setDefaultDirectory(original.serverId, "/workspace/Project")
+        val updated = repository.save(original.serverId, "Renamed", "https://SERVER.test/", null)
+        assertEquals("Renamed", updated.displayName)
+        assertEquals("/workspace/Project", updated.defaultDirectory)
+        assertEquals(1, repository.profiles().size)
+    }
+
+    @Test
+    fun settingDefaultProjectInvalidatesThePreviousProfileRevision() = runBlocking {
+        val original = repository.save(null, "First", "https://server.test", credential)
+        repository.setDefaultDirectory(original.serverId, "/workspace/Project")
+        val current = repository.profiles().single()
+        assertEquals(original.profileRevision + 1, current.profileRevision)
+        assertEquals("/workspace/Project", current.defaultDirectory)
+        assertTrue(!repository.withCurrentProfile(original) {})
+    }
+
+    @Test
     fun staleEditDoesNotRecreateDeletedProfile() = runBlocking {
         val profile = repository.save(null, "Server", "https://server.test", credential)
         repository.delete(profile.serverId)

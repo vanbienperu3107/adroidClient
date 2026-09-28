@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.chungjungsoo.gptmobile.data.database.entity.ChatRoom
 import dev.chungjungsoo.gptmobile.data.dto.Platform
-import dev.chungjungsoo.gptmobile.data.model.ChatStartDestination
 import dev.chungjungsoo.gptmobile.data.opencode.CachedOpenCodeSession
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseRepository
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeProfileRepository
@@ -39,9 +38,6 @@ class HomeViewModel @Inject constructor(
 
     private val _platformState = MutableStateFlow(listOf<Platform>())
     val platformState: StateFlow<List<Platform>> = _platformState.asStateFlow()
-
-    private val _chatStartDestination = MutableStateFlow(ChatStartDestination.OPEN_CODE)
-    val chatStartDestination: StateFlow<ChatStartDestination> = _chatStartDestination.asStateFlow()
 
     data class OpenCodeHomeState(
         val serverId: String? = null,
@@ -142,7 +138,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val platforms = settingRepository.fetchPlatforms()
             _platformState.update { platforms }
-            _chatStartDestination.value = settingRepository.fetchChatStartDestination()
         }
     }
 

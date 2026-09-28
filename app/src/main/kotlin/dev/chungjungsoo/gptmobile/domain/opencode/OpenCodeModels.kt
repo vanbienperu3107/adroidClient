@@ -16,7 +16,8 @@ data class OpenCodeServerProfile(
     val credentialRef: String,
     val profileRevision: Long,
     val lastKnownVersion: String? = null,
-    val lastHealthCheckAt: Long? = null
+    val lastHealthCheckAt: Long? = null,
+    val defaultDirectory: String? = null
 )
 
 sealed interface OpenCodeConnectionState {

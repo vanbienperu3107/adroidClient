@@ -10,12 +10,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +48,9 @@ fun OpenCodeServerListScreen(
 ) {
     val profiles by viewModel.profiles.collectManagedState()
     var pendingDelete by remember { mutableStateOf<OpenCodeServerProfile?>(null) }
+    var actionsFor by remember { mutableStateOf<OpenCodeServerProfile?>(null) }
+    var projectProfile by remember { mutableStateOf<OpenCodeServerProfile?>(null) }
+    val projects by viewModel.projects.collectManagedState()
     LaunchedEffect(Unit) { viewModel.refresh().join() }
     pendingDelete?.let { profile ->
         AlertDialog(
@@ -56,20 +66,59 @@ fun OpenCodeServerListScreen(
             dismissButton = { Button(onClick = { pendingDelete = null }) { Text("Cancel") } }
         )
     }
+    projectProfile?.let { profile ->
+        AlertDialog(
+            onDismissRequest = { projectProfile = null },
+            title = { Text("Default project") },
+            text = {
+                Column {
+                    if (projects.isEmpty()) Text("No projects are available.")
+                    projects.forEach { project ->
+                        TextButton(onClick = {
+                            viewModel.setDefaultProject(profile, project.directory)
+                            projectProfile = null
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text(project.directory)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { projectProfile = null }) { Text("Cancel") } }
+        )
+    }
     Scaffold(topBar = { TopAppBar(title = { Text("OpenCode servers") }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState())) {
             Button(onClick = { onEdit(null) }) { Text("Add server") }
             profiles.forEach { profile ->
                 Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         Text(profile.displayName)
                         Text(profile.baseUrl)
-                        Button(onClick = { onBrowse(profile.serverId) }) { Text("Projects") }
+                        profile.defaultDirectory?.let { Text("Default project: $it") }
                     }
-                    Row {
-                        Button(onClick = { onEdit(profile.serverId) }) { Text("Edit") }
-                        Spacer(Modifier.width(8.dp))
-                        Button(onClick = { pendingDelete = profile }) { Text("Delete") }
+                    Column {
+                        IconButton(onClick = { actionsFor = profile }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "Server actions")
+                        }
+                        DropdownMenu(expanded = actionsFor?.serverId == profile.serverId, onDismissRequest = { actionsFor = null }) {
+                            DropdownMenuItem(text = { Text("Default project") }, onClick = {
+                                actionsFor = null
+                                projectProfile = profile
+                                viewModel.loadProjects(profile)
+                            })
+                            DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                                actionsFor = null
+                                onEdit(profile.serverId)
+                            })
+                            DropdownMenuItem(text = { Text("Delete") }, onClick = {
+                                actionsFor = null
+                                pendingDelete = profile
+                            })
+                            DropdownMenuItem(text = { Text("Projects") }, onClick = {
+                                actionsFor = null
+                                onBrowse(profile.serverId)
+                            })
+                        }
                     }
                 }
             }
