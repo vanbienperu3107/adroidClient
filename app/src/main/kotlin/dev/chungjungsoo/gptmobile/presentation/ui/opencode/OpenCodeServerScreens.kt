@@ -24,6 +24,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -64,7 +66,10 @@ fun OpenCodeServerListScreen(
                     Column {
                         Text(profile.displayName)
                         Text(profile.baseUrl)
-                        Button(onClick = { onBrowse(profile.serverId) }) { Text("Projects") }
+                        Button(
+                            onClick = { onBrowse(profile.serverId) },
+                            modifier = Modifier.semantics { testTag = "opencode-server-projects-${profile.serverId}" }
+                        ) { Text("Projects") }
                     }
                     Row {
                         Button(onClick = { onEdit(profile.serverId) }) { Text("Edit") }
@@ -93,16 +98,16 @@ fun OpenCodeServerEditScreen(
     val formError by viewModel.formError.collectManagedState()
     Scaffold(topBar = { TopAppBar(title = { Text(if (profile == null) "Add OpenCode server" else "Edit OpenCode server") }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState())) {
-            OutlinedTextField(name, { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(url, { url = it }, label = { Text("HTTPS URL") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(username, { username = it }, label = { Text("Basic username") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(password, { password = it }, label = { Text(if (profile == null) "Password" else "New password (optional)") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(name, { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth().semantics { testTag = "opencode-server-name" })
+            OutlinedTextField(url, { url = it }, label = { Text("HTTPS URL") }, modifier = Modifier.fillMaxWidth().semantics { testTag = "opencode-server-url" })
+            OutlinedTextField(username, { username = it }, label = { Text("Basic username") }, modifier = Modifier.fillMaxWidth().semantics { testTag = "opencode-server-username" })
+            OutlinedTextField(password, { password = it }, label = { Text(if (profile == null) "Password" else "New password (optional)") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth().semantics { testTag = "opencode-server-password" })
             Text(connectionText(state), modifier = Modifier.padding(vertical = 12.dp))
             formError?.let { Text(it) }
             Row {
-                Button(onClick = { viewModel.test(name, url, username, password) }) { Text("Test") }
+                Button(onClick = { viewModel.test(name, url, username, password) }, modifier = Modifier.semantics { testTag = "opencode-server-test" }) { Text("Test") }
                 Spacer(Modifier.width(8.dp))
-                Button(onClick = { viewModel.save(name, url, username, password, onBack) }) { Text("Save") }
+                Button(onClick = { viewModel.save(name, url, username, password, onBack) }, modifier = Modifier.semantics { testTag = "opencode-server-save" }) { Text("Save") }
                 Spacer(Modifier.width(8.dp))
                 Button(onClick = onBack) { Text("Cancel") }
             }

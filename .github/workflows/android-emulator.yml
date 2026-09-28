@@ -67,7 +67,7 @@ jobs:
       - name: Enable KVM
         run: sudo chmod 666 /dev/kvm
 
-      - name: Run live OpenCode read-only smoke test
+      - name: Run live OpenCode user journey
         uses: reactivecircus/android-emulator-runner@v2
         env:
           OPENCODE_TEST_URL: https://opencode.hangocthanh.io.vn
@@ -79,7 +79,10 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
-          script: ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.LiveOpenCodeInstrumentedTest -Pandroid.testInstrumentationRunnerArguments.opencode_url="$OPENCODE_TEST_URL" -Pandroid.testInstrumentationRunnerArguments.opencode_username="$OPENCODE_TEST_USERNAME" -Pandroid.testInstrumentationRunnerArguments.opencode_password="$OPEN_CODE_PASSWORD"
+          script: |
+            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.LiveOpenCodeInstrumentedTest,dev.chungjungsoo.gptmobile.LiveOpenCodeUserJourneyInstrumentedTest -Pandroid.testInstrumentationRunnerArguments.opencode_url="$OPENCODE_TEST_URL" -Pandroid.testInstrumentationRunnerArguments.opencode_username="$OPENCODE_TEST_USERNAME" -Pandroid.testInstrumentationRunnerArguments.opencode_password="$OPEN_CODE_PASSWORD"
+            mkdir -p app/build/test-evidence
+            adb pull /sdcard/Android/data/dev.chungjungsoo.gptmobile/files/test-evidence app/build/test-evidence
 
       - name: Upload live instrumented test report
         if: always()
@@ -87,3 +90,10 @@ jobs:
         with:
           name: live-opencode-test-report-${{ github.sha }}
           path: app/build/reports/androidTests/
+
+      - name: Upload live user-journey screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-opencode-user-journey-evidence-${{ github.sha }}
+          path: app/build/test-evidence/
