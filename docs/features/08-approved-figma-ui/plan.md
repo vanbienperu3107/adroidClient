@@ -44,11 +44,11 @@ Approved review file: `https://www.figma.com/design/X5IJaFPvFc5O6DjZqEpfSM`.
 | --- | --- | --- |
 | F08-T01 | PASS local | `OpenCodeProfileRepositoryTest` rejects a canonical duplicate before a second vault credential is written. |
 | F08-T02 | PASS KVM | API 34 instrumentation passed on PR SHA `24dde07`; cache order regression is included. |
-| F08-T03 | PASS KVM | API 34 instrumentation, debug APK and format/unit checks passed on PR SHA `24dde07`. |
-| F08-T04 | PASS KVM live read-only | Manual run `36447708338` passed health/project/model catalog checks on SHA `24dde07`. |
-| F08-T05 | PARTIAL | Direct chat local routing compiles and existing local history test suite passes; a visual direct-row UI journey remains required. |
-| F08-T06 | PARTIAL | Profile default project/delete behavior compiles and JVM duplicate/default project tests pass; a visual action-menu UI journey remains required. |
-| F08-T07 | PARTIAL | Local/PR debug APK, KVM and live read-only checks pass on `24dde07`; signed APK/AAB remains pending merge/tag release SHA. |
+| F08-T03 | PENDING KVM | `ApprovedUiUserJourneyInstrumentedTest` now drives the production Chats controls at emulator width. |
+| F08-T04 | PENDING KVM live read-only | Live test now reads the selected project's existing session catalog and history without sending a mutation. |
+| F08-T05 | PENDING KVM | `ApprovedUiUserJourneyInstrumentedTest` clicks the real direct-row composable and verifies local route selection. |
+| F08-T06 | PENDING KVM | `ApprovedUiUserJourneyInstrumentedTest` drives all Settings branches and verifies Default project/Edit/Delete are the only server actions. |
+| F08-T07 | PENDING | Final local/KVM/signed artifact evidence will be recorded on the release SHA. |
 
 ## Constraints
 

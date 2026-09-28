@@ -99,26 +99,43 @@ fun OpenCodeServerListScreen(
                         IconButton(onClick = { actionsFor = profile }) {
                             Icon(Icons.Filled.MoreVert, contentDescription = "Server actions")
                         }
-                        DropdownMenu(expanded = actionsFor?.serverId == profile.serverId, onDismissRequest = { actionsFor = null }) {
-                            DropdownMenuItem(text = { Text("Default project") }, onClick = {
+                        ServerActionMenu(
+                            expanded = actionsFor?.serverId == profile.serverId,
+                            onDismiss = { actionsFor = null },
+                            onDefaultProject = {
                                 actionsFor = null
                                 projectProfile = profile
                                 viewModel.loadProjects(profile)
-                            })
-                            DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                            },
+                            onEdit = {
                                 actionsFor = null
                                 onEdit(profile.serverId)
-                            })
-                            DropdownMenuItem(text = { Text("Delete") }, onClick = {
+                            },
+                            onDelete = {
                                 actionsFor = null
                                 pendingDelete = profile
-                            })
-                        }
+                            }
+                        )
                     }
                 }
             }
             Button(onClick = onBack, modifier = Modifier.padding(top = 20.dp)) { Text("Back") }
         }
+    }
+}
+
+@Composable
+fun ServerActionMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onDefaultProject: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        DropdownMenuItem(text = { Text("Default project") }, onClick = onDefaultProject)
+        DropdownMenuItem(text = { Text("Edit") }, onClick = onEdit)
+        DropdownMenuItem(text = { Text("Delete") }, onClick = onDelete)
     }
 }
 

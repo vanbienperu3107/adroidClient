@@ -51,6 +51,14 @@ class LiveOpenCodeInstrumentedTest {
             assertTrue("OpenCode did not return a project worktree", !directory.isNullOrBlank())
             val models = api.getWithQuery(profile, listOf("api", "model"), mapOf("location[directory]" to requireNotNull(directory)))
             assertTrue("OpenCode model catalog was unavailable", models is OpenCodeReadResult.Success)
+            val sessions = api.get(profile, listOf("session"), directory)
+            assertTrue("OpenCode session catalog was unavailable", sessions is OpenCodeReadResult.Success)
+            val sessionId = Json.parseToJsonElement((sessions as OpenCodeReadResult.Success).json).jsonArray
+                .firstOrNull { row -> row.jsonObject["directory"]?.jsonPrimitive?.content == directory }
+                ?.jsonObject?.get("id")?.jsonPrimitive?.content
+            assertTrue("OpenCode did not return an existing session for the selected project", !sessionId.isNullOrBlank())
+            val history = api.get(profile, listOf("session", requireNotNull(sessionId), "message"), directory, limit = 50)
+            assertTrue("OpenCode session history was unavailable", history is OpenCodeReadResult.Success)
         } finally {
             vault.delete(serverId, credentialRef)
             vault.deleteServer(serverId)
