@@ -91,6 +91,7 @@ class OpenCodeBrowseRepository(
     /** Prefer the server's current project; fall back to the first ordered project. */
     suspend fun defaultDirectory(serverId: String): String? {
         val p = profile(serverId) ?: return null
+        p.defaultDirectory?.let { return it }
         val current = api.get(p, listOf("project", "current"), null)
         if (observeAuth(p, current)) return null
         val fromCurrent = (current as? OpenCodeReadResult.Success)?.let { response ->

@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.chungjungsoo.gptmobile.data.opencode.CachedOpenCodeProject
+import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseRepository
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeHealthClient
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeProfileRepository
 import dev.chungjungsoo.gptmobile.domain.opencode.OpenCodeConnectionState
@@ -19,6 +21,7 @@ import kotlinx.coroutines.launch
 class OpenCodeServerViewModel @Inject constructor(
     private val repository: OpenCodeProfileRepository,
     private val healthClient: OpenCodeHealthClient,
+    private val browseRepository: OpenCodeBrowseRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val editingId = savedStateHandle.get<String>("serverId")?.takeUnless { it == "new" }
@@ -30,6 +33,8 @@ class OpenCodeServerViewModel @Inject constructor(
     val state = _state.asStateFlow()
     private val _formError = MutableStateFlow<String?>(null)
     val formError = _formError.asStateFlow()
+    private val _projects = MutableStateFlow<List<CachedOpenCodeProject>>(emptyList())
+    val projects = _projects.asStateFlow()
     private val requestGeneration = AtomicLong(0)
 
     init {
@@ -83,6 +88,19 @@ class OpenCodeServerViewModel @Inject constructor(
         requestGeneration.incrementAndGet()
         repository.delete(profile.serverId)
         refresh()
+    }
+
+    fun loadProjects(profile: OpenCodeServerProfile) = viewModelScope.launch {
+        _projects.value = browseRepository.projects(profile.serverId).projects
+    }
+
+    fun setDefaultProject(profile: OpenCodeServerProfile, directory: String) = viewModelScope.launch {
+        try {
+            repository.setDefaultDirectory(profile.serverId, directory)
+            refresh()
+        } catch (error: IllegalArgumentException) {
+            _formError.value = error.message
+        }
     }
 
     private suspend fun recordHealth(profile: OpenCodeServerProfile, result: OpenCodeConnectionState) {

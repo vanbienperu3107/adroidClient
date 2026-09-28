@@ -53,7 +53,6 @@ import dev.chungjungsoo.gptmobile.R
 import dev.chungjungsoo.gptmobile.data.database.entity.ChatRoom
 import dev.chungjungsoo.gptmobile.data.dto.Platform
 import dev.chungjungsoo.gptmobile.data.model.ApiType
-import dev.chungjungsoo.gptmobile.data.model.ChatStartDestination
 import dev.chungjungsoo.gptmobile.presentation.common.PlatformCheckBoxItem
 import dev.chungjungsoo.gptmobile.util.collectManagedState
 import dev.chungjungsoo.gptmobile.util.getPlatformTitleResources
@@ -74,7 +73,6 @@ fun HomeScreen(
     val showDeleteWarningDialog by homeViewModel.showDeleteWarningDialog.collectManagedState()
     val platformState by homeViewModel.platformState.collectManagedState()
     val openCodeState by homeViewModel.openCodeState.collectManagedState()
-    val chatStartDestination by homeViewModel.chatStartDestination.collectManagedState()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectManagedState()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -103,16 +101,13 @@ fun HomeScreen(
         val enabledApiTypes = platformState.filter { it.enabled }.map { it.name }
         if (enabledApiTypes.size == 1) navigateToNewChat(enabledApiTypes) else homeViewModel.openSelectModelDialog()
     }
-    fun startNewChat() {
-        when (chatStartDestination) {
-            ChatStartDestination.OPEN_CODE -> {
-                if (openCodeState.serverId != null && openCodeState.directory != null) {
-                    homeViewModel.createOpenCodeSession()
-                } else {
-                    onOpenCodeSetup()
-                }
-            }
-            ChatStartDestination.DIRECT -> startDirectChat()
+    var showNewChatChoice by remember { mutableStateOf(false) }
+
+    fun startOpenCodeChat() {
+        if (openCodeState.serverId != null && openCodeState.directory != null) {
+            homeViewModel.createOpenCodeSession()
+        } else {
+            onOpenCodeSetup()
         }
     }
 
@@ -142,14 +137,14 @@ fun HomeScreen(
             item {
                 TextButton(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    onClick = ::startNewChat
+                    onClick = { showNewChatChoice = true }
                 ) {
                     Icon(Icons.Outlined.Edit, contentDescription = null)
                     Text("  New chat", modifier = Modifier.weight(1f))
-                    Text(if (chatStartDestination == ChatStartDestination.OPEN_CODE) "OpenCode" else "Direct", style = MaterialTheme.typography.labelMedium)
+                    Text("Choose", style = MaterialTheme.typography.labelMedium)
                 }
             }
-            item { SectionHeader("OpenCode sessions", openCodeSessions.size) { showAllHistory = "OpenCode sessions" } }
+            item { SectionHeader("OpenCode chats", openCodeSessions.size) { showAllHistory = "OpenCode chats" } }
             if (openCodeState.serverId == null) {
                 item { TextButton(onClick = onOpenCodeSetup, modifier = Modifier.padding(horizontal = 16.dp)) { Text("Connect OpenCode to see workspace sessions") } }
             } else {
@@ -162,8 +157,8 @@ fun HomeScreen(
                             onOpenCodeSession(server, directory, session.sessionId)
                         }).padding(horizontal = 8.dp),
                         headlineContent = { Text(session.title) },
-                        supportingContent = { Text("OpenCode · ${session.status}") },
-                        leadingContent = { Icon(Icons.Filled.Add, contentDescription = "OpenCode session") }
+                        supportingContent = { Text("OpenCode chat · ${session.status}") },
+                        leadingContent = { Icon(Icons.Filled.Add, contentDescription = "OpenCode chat") }
                     )
                 }
                 if (openCodeState.stale) item { Text("Showing cached OpenCode sessions", modifier = Modifier.padding(horizontal = 24.dp)) }
@@ -215,7 +210,7 @@ fun HomeScreen(
             )
         }
         showAllHistory?.let { title ->
-            val openCode = title == "OpenCode sessions"
+            val openCode = title == "OpenCode chats"
             AlertDialog(
                 onDismissRequest = { showAllHistory = null },
                 title = { Text(title) },
@@ -241,6 +236,31 @@ fun HomeScreen(
                     }
                 },
                 confirmButton = { TextButton(onClick = { showAllHistory = null }) { Text("Done") } }
+            )
+        }
+        if (showNewChatChoice) {
+            AlertDialog(
+                onDismissRequest = { showNewChatChoice = false },
+                title = { Text("New chat") },
+                text = {
+                    Column {
+                        TextButton(onClick = {
+                            showNewChatChoice = false
+                            startOpenCodeChat()
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text("OpenCode", modifier = Modifier.weight(1f))
+                            Text("Uses the server default project")
+                        }
+                        TextButton(onClick = {
+                            showNewChatChoice = false
+                            startDirectChat()
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Direct provider", modifier = Modifier.weight(1f))
+                            Text("Uses a configured provider")
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { showNewChatChoice = false }) { Text("Cancel") } }
             )
         }
     }

@@ -38,6 +38,7 @@ interface OpenCodeProfileRepository {
         credential: OpenCodeCredential.Basic?
     ): OpenCodeServerProfile
     suspend fun delete(serverId: String)
+    suspend fun setDefaultDirectory(serverId: String, directory: String)
     suspend fun recordHealth(serverId: String, version: String?, checkedAt: Long, expectedRevision: Long)
 
     /** Execute a local cache operation under the same lock as profile mutations. Never do network IO here. */
@@ -98,6 +99,9 @@ class DataStoreOpenCodeProfileRepository internal constructor(
         val all = read().toMutableList()
         val index = existingId?.let { id -> all.indexOfFirst { it.serverId == id } } ?: -1
         require(existingId == null || index >= 0) { "Server profile no longer exists" }
+        require(all.none { it.serverId != existingId && it.baseUrl == canonicalUrl }) {
+            "An OpenCode server with this HTTPS URL already exists"
+        }
         val previous = all.getOrNull(index)
         val serverId = previous?.serverId ?: UUID.randomUUID().toString()
         val bindingChanged = previous?.baseUrl != canonicalUrl || previous?.authMode != OpenCodeAuthMode.BASIC.name
@@ -122,7 +126,8 @@ class DataStoreOpenCodeProfileRepository internal constructor(
             credentialRef = reference,
             profileRevision = (previous?.profileRevision ?: 0) + 1,
             lastKnownVersion = previous?.lastKnownVersion,
-            lastHealthCheckAt = null
+            lastHealthCheckAt = null,
+            defaultDirectory = previous?.defaultDirectory
         )
         if (index == -1) all += updated else all[index] = updated
         dataStore.edit { preferences ->
@@ -150,6 +155,20 @@ class DataStoreOpenCodeProfileRepository internal constructor(
             preferences[CLEANUP_KEY] = json.encodeToString(CleanupSerializer, cleanup)
             preferences[EXPORT_PENDING] = true
         }
+        recover(all)
+    }
+
+    override suspend fun setDefaultDirectory(serverId: String, directory: String): Unit = mutationMutex.withLock {
+        require(directory.isNotBlank() && '\u0000' !in directory) { "Default project is required" }
+        val all = read().toMutableList()
+        val index = all.indexOfFirst { it.serverId == serverId }
+        require(index >= 0) { "Server profile no longer exists" }
+        all[index] = all[index].copy(
+            defaultDirectory = directory,
+            profileRevision = all[index].profileRevision + 1,
+            lastHealthCheckAt = null
+        )
+        write(all)
         recover(all)
     }
 
@@ -182,7 +201,7 @@ class DataStoreOpenCodeProfileRepository internal constructor(
                 } catch (_: IllegalArgumentException) {
                     return@mapNotNull null
                 }
-                StoredProfile(exported.serverId, exported.displayName, canonicalUrl, exported.authMode, "", exported.profileRevision)
+                StoredProfile(exported.serverId, exported.displayName, canonicalUrl, exported.authMode, "", exported.profileRevision, defaultDirectory = exported.defaultDirectory)
             }
         } catch (_: Exception) {
             emptyList()
@@ -234,7 +253,7 @@ class DataStoreOpenCodeProfileRepository internal constructor(
     private data class Cleanup(val serverId: String, val reference: String, val deleteKey: Boolean)
 
     private fun writeExport(profiles: List<StoredProfile>) {
-        val export = profiles.map { ExportProfile(it.serverId, it.displayName, it.baseUrl, it.authMode, it.profileRevision) }
+        val export = profiles.map { ExportProfile(it.serverId, it.displayName, it.baseUrl, it.authMode, it.profileRevision, it.defaultDirectory) }
         val staging = exportFile.resolveSibling("${exportFile.name}.staging")
         staging.writeText(json.encodeToString(ExportListSerializer, export))
         try {
@@ -253,7 +272,8 @@ class DataStoreOpenCodeProfileRepository internal constructor(
         val credentialRef: String,
         val profileRevision: Long,
         val lastKnownVersion: String? = null,
-        val lastHealthCheckAt: Long? = null
+        val lastHealthCheckAt: Long? = null,
+        val defaultDirectory: String? = null
     ) {
         fun toDomain() = OpenCodeServerProfile(
             serverId,
@@ -263,7 +283,8 @@ class DataStoreOpenCodeProfileRepository internal constructor(
             credentialRef,
             profileRevision,
             lastKnownVersion,
-            lastHealthCheckAt
+            lastHealthCheckAt,
+            defaultDirectory
         )
     }
 
@@ -273,7 +294,8 @@ class DataStoreOpenCodeProfileRepository internal constructor(
         val displayName: String,
         val baseUrl: String,
         val authMode: String,
-        val profileRevision: Long
+        val profileRevision: Long,
+        val defaultDirectory: String? = null
     )
 
     private companion object {

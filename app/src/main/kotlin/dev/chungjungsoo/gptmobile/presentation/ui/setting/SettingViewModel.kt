@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.chungjungsoo.gptmobile.data.dto.Platform
 import dev.chungjungsoo.gptmobile.data.model.ApiType
-import dev.chungjungsoo.gptmobile.data.model.ChatStartDestination
 import dev.chungjungsoo.gptmobile.data.repository.SettingRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,12 +24,8 @@ class SettingViewModel @Inject constructor(
     private val _dialogState = MutableStateFlow(DialogState())
     val dialogState: StateFlow<DialogState> = _dialogState.asStateFlow()
 
-    private val _chatStartDestination = MutableStateFlow(ChatStartDestination.OPEN_CODE)
-    val chatStartDestination: StateFlow<ChatStartDestination> = _chatStartDestination.asStateFlow()
-
     init {
         fetchPlatformStatus()
-        fetchChatStartDestination()
     }
 
     fun toggleAPI(apiType: ApiType) {
@@ -161,11 +156,6 @@ class SettingViewModel @Inject constructor(
 
     fun openThemeDialog() = _dialogState.update { it.copy(isThemeDialogOpen = true) }
 
-    fun updateChatStartDestination(destination: ChatStartDestination) {
-        _chatStartDestination.value = destination
-        viewModelScope.launch { settingRepository.updateChatStartDestination(destination) }
-    }
-
     fun openApiUrlDialog() = _dialogState.update { it.copy(isApiUrlDialogOpen = true) }
 
     fun openApiTokenDialog() = _dialogState.update { it.copy(isApiTokenDialogOpen = true) }
@@ -197,10 +187,6 @@ class SettingViewModel @Inject constructor(
             val platforms = settingRepository.fetchPlatforms()
             _platformState.update { platforms }
         }
-    }
-
-    private fun fetchChatStartDestination() {
-        viewModelScope.launch { _chatStartDestination.value = settingRepository.fetchChatStartDestination() }
     }
 
     data class DialogState(

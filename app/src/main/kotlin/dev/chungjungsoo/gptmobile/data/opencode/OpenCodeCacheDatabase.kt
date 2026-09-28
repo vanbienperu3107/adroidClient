@@ -155,7 +155,7 @@ abstract class OpenCodeCacheDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     protected abstract suspend fun upsertParts(rows: List<CachedOpenCodePart>)
 
-    @Query("SELECT * FROM opencode_messages WHERE serverId=:serverId AND directory=:directory AND sessionId=:sessionId AND profileRevision=:revision ORDER BY messageId")
+    @Query("SELECT * FROM opencode_messages WHERE serverId=:serverId AND directory=:directory AND sessionId=:sessionId AND profileRevision=:revision ORDER BY position ASC, messageId ASC")
     abstract suspend fun messages(serverId: String, directory: String, sessionId: String, revision: Long): List<CachedOpenCodeMessage>
 
     @Query("SELECT * FROM opencode_parts WHERE serverId=:serverId AND directory=:directory AND sessionId=:sessionId ORDER BY messageId, position")

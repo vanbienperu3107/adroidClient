@@ -40,4 +40,21 @@ class OpenCodeCacheInstrumentedTest {
             db.close()
         }
     }
+
+    @Test fun cachedHistoryUsesServerPositionInsteadOfMessageId() = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext, OpenCodeCacheDatabase::class.java).build()
+        try {
+            val dao = db.cacheDao()
+            val page = OpenCodeHistoryPage(
+                listOf(
+                    OpenCodeHistoryMessage("msg_z", "user", listOf(OpenCodeHistoryPart("part_z", "text", "first"))),
+                    OpenCodeHistoryMessage("msg_a", "assistant", listOf(OpenCodeHistoryPart("part_a", "text", "second")))
+                )
+            )
+            dao.storeHistory("server", "/Project", "ses_order", 1, page)
+            assertEquals(listOf("msg_z", "msg_a"), dao.messages("server", "/Project", "ses_order", 1).map { it.messageId })
+        } finally {
+            db.close()
+        }
+    }
 }
