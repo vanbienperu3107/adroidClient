@@ -43,7 +43,6 @@ import dev.chungjungsoo.gptmobile.util.collectManagedState
 fun OpenCodeServerListScreen(
     onBack: () -> Unit,
     onEdit: (String?) -> Unit,
-    onBrowse: (String) -> Unit = {},
     viewModel: OpenCodeServerViewModel = hiltViewModel()
 ) {
     val profiles by viewModel.profiles.collectManagedState()
@@ -113,10 +112,6 @@ fun OpenCodeServerListScreen(
                             DropdownMenuItem(text = { Text("Delete") }, onClick = {
                                 actionsFor = null
                                 pendingDelete = profile
-                            })
-                            DropdownMenuItem(text = { Text("Projects") }, onClick = {
-                                actionsFor = null
-                                onBrowse(profile.serverId)
                             })
                         }
                     }

@@ -78,8 +78,7 @@ fun NavGraphBuilder.openCodeNavigation(navController: NavHostController) {
     composable(Route.OPEN_CODE_SERVERS) {
         OpenCodeServerListScreen(
             onBack = { navController.navigateUp() },
-            onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) },
-            onBrowse = { id -> navController.navigate(Route.OPEN_CODE_BROWSE.replace("{serverId}", android.net.Uri.encode(id)).replace("{directory}", "").replace("{session}", "")) }
+            onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) }
         )
     }
     composable(Route.OPEN_CODE_SERVER_EDIT, arguments = listOf(navArgument("serverId") { defaultValue = "new" })) {
@@ -321,8 +320,7 @@ fun NavGraphBuilder.settingNavigation(navController: NavHostController) {
         composable(Route.OPEN_CODE_SERVERS_SETTINGS) {
             OpenCodeServerListScreen(
                 onBack = { navController.navigateUp() },
-                onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) },
-                onBrowse = { id -> navController.navigate(Route.OPEN_CODE_BROWSE.replace("{serverId}", android.net.Uri.encode(id)).replace("{directory}", "").replace("{session}", "")) }
+                onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) }
             )
         }
     }

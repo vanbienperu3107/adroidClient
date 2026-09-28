@@ -11,6 +11,7 @@ Approved review file: `https://www.figma.com/design/X5IJaFPvFc5O6DjZqEpfSM`.
 - A direct chat row opens its existing local `ChatRoom` history.
 - Session IDs remain an implementation detail; user-facing labels use chat title, provider/model and project context.
 - A project is configured as the server's default project in Settings and is used only when creating a new OpenCode chat.
+- Server management does not expose a generic Projects browser. Its only project action is selecting the saved default project.
 - New chat presents an explicit OpenCode/direct choice. It is not a persistent global Settings toggle.
 
 ## Work items
