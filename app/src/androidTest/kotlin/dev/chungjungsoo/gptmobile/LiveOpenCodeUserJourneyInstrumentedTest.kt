@@ -65,8 +65,7 @@ class LiveOpenCodeUserJourneyInstrumentedTest {
 
     private fun capture(name: String) {
         composeRule.runOnIdle {
-            val context = InstrumentationRegistry.getInstrumentation().targetContext
-            val directory = File(requireNotNull(context.getExternalFilesDir(null)), "test-evidence").also { it.mkdirs() }
+            val directory = File("/sdcard/test-evidence").also { it.mkdirs() }
             assertTrue("Could not capture $name", UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(File(directory, name)))
         }
     }
