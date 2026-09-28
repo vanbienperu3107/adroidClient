@@ -2,6 +2,7 @@ package dev.chungjungsoo.gptmobile
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -31,30 +32,35 @@ class LiveOpenCodeUserJourneyInstrumentedTest {
         val password = args.getString("opencode_password").orEmpty()
         assumeTrue("Live OpenCode credentials were not provided", url.isNotBlank() && username.isNotBlank() && password.isNotBlank())
 
-        composeRule.waitUntil(15_000) { composeRule.onAllNodesWithText("Connect OpenCode").fetchSemanticsNodes().isNotEmpty() }
-        composeRule.onNodeWithText("Connect OpenCode").performClick()
-        composeRule.waitUntil(10_000) { composeRule.onAllNodesWithText("OpenCode servers").fetchSemanticsNodes().isNotEmpty() }
-        composeRule.onNodeWithText("Add server").performClick()
+        try {
+            composeRule.waitUntil(15_000) { composeRule.onAllNodesWithTag("start-connect-opencode").fetchSemanticsNodes().isNotEmpty() }
+            composeRule.onNodeWithTag("start-connect-opencode").performClick()
+            composeRule.waitUntil(15_000) { composeRule.onAllNodesWithTag("opencode-server-list").fetchSemanticsNodes().isNotEmpty() }
+            composeRule.onNodeWithText("Add server").performClick()
 
-        composeRule.onNodeWithTag("opencode-server-name").performTextInput("OpenCode CI")
-        composeRule.onNodeWithTag("opencode-server-url").performTextInput(url)
-        composeRule.onNodeWithTag("opencode-server-username").performTextInput(username)
-        composeRule.onNodeWithTag("opencode-server-password").performTextInput(password)
-        composeRule.onNodeWithTag("opencode-server-test").performClick()
-        composeRule.waitUntil(30_000) { composeRule.onAllNodesWithText("Connected:", substring = true).fetchSemanticsNodes().isNotEmpty() }
-        capture("01-connection-passed.png")
+            composeRule.onNodeWithTag("opencode-server-name").performTextInput("OpenCode CI")
+            composeRule.onNodeWithTag("opencode-server-url").performTextInput(url)
+            composeRule.onNodeWithTag("opencode-server-username").performTextInput(username)
+            composeRule.onNodeWithTag("opencode-server-password").performTextInput(password)
+            composeRule.onNodeWithTag("opencode-server-test").performClick()
+            composeRule.waitUntil(30_000) { composeRule.onAllNodesWithText("Connected:", substring = true).fetchSemanticsNodes().isNotEmpty() }
+            capture("01-connection-passed.png")
 
-        composeRule.onNodeWithTag("opencode-server-save").performClick()
-        composeRule.waitUntil(15_000) { composeRule.onAllNodesWithText("OpenCode CI").fetchSemanticsNodes().isNotEmpty() }
-        capture("02-server-saved.png")
+            composeRule.onNodeWithTag("opencode-server-save").performClick()
+            composeRule.waitUntil(15_000) { composeRule.onAllNodesWithText("OpenCode CI").fetchSemanticsNodes().isNotEmpty() }
+            capture("02-server-saved.png")
 
-        composeRule.onNodeWithText("Projects").performClick()
-        composeRule.waitUntil(30_000) {
-            composeRule.onAllNodesWithText("OpenCode · Projects").fetchSemanticsNodes().isNotEmpty() &&
-                composeRule.onAllNodesWithText("No data").fetchSemanticsNodes().isEmpty()
+            composeRule.onNodeWithText("Projects").performClick()
+            composeRule.waitUntil(30_000) {
+                composeRule.onAllNodesWithText("OpenCode · Projects").fetchSemanticsNodes().isNotEmpty() &&
+                    composeRule.onAllNodesWithText("No data").fetchSemanticsNodes().isEmpty()
+            }
+            composeRule.onNodeWithText("OpenCode · Projects").assertIsDisplayed()
+            capture("03-projects-loaded.png")
+        } catch (error: Throwable) {
+            capture("failure.png")
+            throw error
         }
-        composeRule.onNodeWithText("OpenCode · Projects").assertIsDisplayed()
-        capture("03-projects-loaded.png")
     }
 
     private fun capture(name: String) {

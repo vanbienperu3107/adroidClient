@@ -59,7 +59,14 @@ fun OpenCodeServerListScreen(
         )
     }
     Scaffold(topBar = { TopAppBar(title = { Text("OpenCode servers") }) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState())) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+                .semantics { testTag = "opencode-server-list" }
+        ) {
             Button(onClick = { onEdit(null) }) { Text("Add server") }
             profiles.forEach { profile ->
                 Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {

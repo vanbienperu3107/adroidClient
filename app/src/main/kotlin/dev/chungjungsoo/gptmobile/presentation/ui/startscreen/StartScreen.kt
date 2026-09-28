@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.chungjungsoo.gptmobile.R
@@ -42,7 +43,11 @@ fun StartScreen(onStartClick: () -> Unit, onOpenCodeClick: () -> Unit) {
                 onClick = onStartClick,
                 text = stringResource(R.string.get_started)
             )
-            PrimaryLongButton(onClick = onOpenCodeClick, text = "Connect OpenCode")
+            PrimaryLongButton(
+                onClick = onOpenCodeClick,
+                text = "Connect OpenCode",
+                modifier = Modifier.semantics { testTag = "start-connect-opencode" }
+            )
         }
     }
 }

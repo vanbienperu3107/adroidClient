@@ -80,9 +80,12 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
           script: |
+            set +e
             ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.LiveOpenCodeInstrumentedTest,dev.chungjungsoo.gptmobile.LiveOpenCodeUserJourneyInstrumentedTest -Pandroid.testInstrumentationRunnerArguments.opencode_url="$OPENCODE_TEST_URL" -Pandroid.testInstrumentationRunnerArguments.opencode_username="$OPENCODE_TEST_USERNAME" -Pandroid.testInstrumentationRunnerArguments.opencode_password="$OPEN_CODE_PASSWORD"
+            status=$?
             mkdir -p app/build/test-evidence
-            adb pull /sdcard/Android/data/dev.chungjungsoo.gptmobile/files/test-evidence app/build/test-evidence
+            adb pull /sdcard/Android/data/dev.chungjungsoo.gptmobile/files/test-evidence app/build/test-evidence || true
+            exit $status
 
       - name: Upload live instrumented test report
         if: always()
