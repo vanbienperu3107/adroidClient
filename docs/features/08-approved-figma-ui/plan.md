@@ -44,11 +44,11 @@ Approved review file: `https://www.figma.com/design/X5IJaFPvFc5O6DjZqEpfSM`.
 | --- | --- | --- |
 | F08-T01 | PASS local | `OpenCodeProfileRepositoryTest` rejects a canonical duplicate before a second vault credential is written. |
 | F08-T02 | PASS KVM | API 34 instrumentation passed on PR SHA `24dde07`; cache order regression is included. |
-| F08-T03 | PENDING KVM | `ApprovedUiUserJourneyInstrumentedTest` now drives the production Chats controls at emulator width. |
-| F08-T04 | PENDING KVM live read-only | Live test now reads the selected project's existing session catalog and history without sending a mutation. |
-| F08-T05 | PENDING KVM | `ApprovedUiUserJourneyInstrumentedTest` clicks the real direct-row composable and verifies local route selection. |
-| F08-T06 | PENDING KVM | `ApprovedUiUserJourneyInstrumentedTest` drives all Settings branches and verifies Default project/Edit/Delete are the only server actions. |
-| F08-T07 | PENDING | Final local/KVM/signed artifact evidence will be recorded on the release SHA. |
+| F08-T03 | PASS KVM | `ApprovedUiUserJourneyInstrumentedTest` passed in API 34 KVM run `36462220618` on `2f1b220`. It drives Chats search, Settings and the OpenCode chat row. |
+| F08-T04 | PASS KVM live read-only | Run `36463115965` passed on `2f1b220`: Basic Auth, project/model/session catalogs and GET-only history for an existing project session. No prompt/mutation was sent. |
+| F08-T05 | PASS KVM | `ApprovedUiUserJourneyInstrumentedTest` passed in run `36462220618`, clicking the real direct chat row and asserting the local route selection. |
+| F08-T06 | PASS KVM | `ApprovedUiUserJourneyInstrumentedTest` passed in run `36462220618`, driving Theme, provider, Cliproxy, OpenCode, About and the Default project/Edit/Delete action menu. |
+| F08-T07 | PENDING release SHA | Local/PR/KVM evidence passes; signed APK/AAB will be recorded after the `v1.3.0-rc.1` release SHA is built. |
 
 ## Constraints
 
