@@ -1,11 +1,13 @@
 package dev.chungjungsoo.gptmobile.presentation.ui.opencode
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,21 +16,27 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.chungjungsoo.gptmobile.data.opencode.CachedOpenCodeInteraction
+import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeModelOption
 import dev.chungjungsoo.gptmobile.presentation.ui.chat.RichChatContent
 import dev.chungjungsoo.gptmobile.util.collectManagedState
 
@@ -48,6 +56,7 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
     var answer by remember { mutableStateOf("") }
     var showModelPicker by remember { mutableStateOf(false) }
     var showVariantPicker by remember { mutableStateOf(false) }
+    var variantPickerModel by remember { mutableStateOf<OpenCodeModelOption?>(null) }
     val back = { if (!viewModel.up()) onBack() }
     BackHandler(onBack = back)
     mutation?.let { (id, deleting) ->
@@ -112,43 +121,32 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
         )
     }
     if (showModelPicker) {
-        AlertDialog(
-            onDismissRequest = { showModelPicker = false },
-            title = { Text("Choose model") },
-            text = {
-                Column {
-                    if (models.isEmpty()) Text("No server models loaded.")
-                    models.forEach { model ->
-                        TextButton(onClick = {
-                            viewModel.selectModel(model, null)
-                            showModelPicker = false
-                        }) { Text(model.name) }
-                    }
+        OpenCodeModelPickerSheet(
+            models = models,
+            selected = selectedModel,
+            onRefresh = viewModel::loadModels,
+            onDismiss = { showModelPicker = false },
+            onSelect = { model ->
+                variantPickerModel = model
+                showModelPicker = false
+                if (model.variants.isEmpty()) {
+                    viewModel.selectModel(model, null)
+                } else {
+                    showVariantPicker = true
                 }
-            },
-            confirmButton = { TextButton(onClick = { viewModel.loadModels() }) { Text("Refresh") } }
+            }
         )
     }
     if (showVariantPicker) {
-        AlertDialog(
-            onDismissRequest = { showVariantPicker = false },
-            title = { Text("Reasoning level") },
-            text = {
-                Column {
-                    val model = selectedModel
-                    if (model == null || model.variants.isEmpty()) {
-                        Text("Server default")
-                    } else {
-                        model.variants.forEach { variant ->
-                            TextButton(onClick = {
-                                viewModel.selectModel(model, variant)
-                                showVariantPicker = false
-                            }) { Text(if (variant == selectedVariant) "✓ $variant" else variant) }
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { showVariantPicker = false }) { Text("Cancel") } }
+        OpenCodeVariantPickerSheet(
+            model = variantPickerModel ?: selectedModel,
+            selectedVariant = selectedVariant,
+            onDismiss = { showVariantPicker = false },
+            onSelect = { variant ->
+                val model = variantPickerModel ?: selectedModel ?: return@OpenCodeVariantPickerSheet
+                viewModel.selectModel(model, variant)
+                showVariantPicker = false
+            }
         )
     }
     Scaffold(topBar = {
@@ -239,6 +237,85 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
                 }
             }
             if (data.messages.isNotEmpty()) item { TextButton(enabled = !loading, onClick = { viewModel.refresh(data.messages.first().id) }) { Text("Load older messages") } }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OpenCodeModelPickerSheet(
+    models: List<OpenCodeModelOption>,
+    selected: OpenCodeModelOption?,
+    onRefresh: () -> Unit,
+    onDismiss: () -> Unit,
+    onSelect: (OpenCodeModelOption) -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    val visibleModels = remember(models, query) {
+        models.filter { model ->
+            query.isBlank() || listOf(model.name, model.providerId, model.id).any { it.contains(query, ignoreCase = true) }
+        }
+    }
+    LaunchedEffect(Unit) { if (models.isEmpty()) onRefresh() }
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().heightIn(max = 560.dp).padding(horizontal = 20.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Choose model", style = MaterialTheme.typography.headlineSmall)
+                TextButton(onClick = onRefresh) { Text("Refresh") }
+            }
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = { Text("Search models") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().semantics { testTag = "opencode-model-search" }
+            )
+            if (visibleModels.isEmpty()) {
+                Text(
+                    if (models.isEmpty()) "No server models loaded." else "No models match your search.",
+                    modifier = Modifier.padding(vertical = 24.dp)
+                )
+            } else {
+                LazyColumn(Modifier.weight(1f)) {
+                    items(visibleModels, key = { "${it.providerId}:${it.id}" }) { model ->
+                        val isSelected = model == selected
+                        ListItem(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .semantics { testTag = "opencode-model-${model.providerId}-${model.id}" }
+                                .clickable { onSelect(model) },
+                            headlineContent = { Text(if (isSelected) "✓ ${model.name}" else model.name) },
+                            supportingContent = {
+                                Text("${model.providerId}/${model.id}" + if (model.variants.isEmpty()) "" else " · ${model.variants.size} levels")
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OpenCodeVariantPickerSheet(
+    model: OpenCodeModelOption?,
+    selectedVariant: String?,
+    onDismiss: () -> Unit,
+    onSelect: (String?) -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
+            Text("Reasoning level", style = MaterialTheme.typography.headlineSmall)
+            Text(model?.name ?: "Choose a model first", style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = { onSelect(null) }, modifier = Modifier.fillMaxWidth()) {
+                Text(if (selectedVariant == null) "✓ Server default" else "Server default")
+            }
+            model?.variants.orEmpty().forEach { variant ->
+                TextButton(onClick = { onSelect(variant) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (variant == selectedVariant) "✓ $variant" else variant)
+                }
+            }
         }
     }
 }
