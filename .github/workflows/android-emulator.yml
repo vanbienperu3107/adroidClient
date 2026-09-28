@@ -84,7 +84,9 @@ jobs:
             ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.LiveOpenCodeInstrumentedTest,dev.chungjungsoo.gptmobile.LiveOpenCodeUserJourneyInstrumentedTest -Pandroid.testInstrumentationRunnerArguments.opencode_url="$OPENCODE_TEST_URL" -Pandroid.testInstrumentationRunnerArguments.opencode_username="$OPENCODE_TEST_USERNAME" -Pandroid.testInstrumentationRunnerArguments.opencode_password="$OPEN_CODE_PASSWORD"
             status=$?
             mkdir -p app/build/test-evidence
-            adb pull /sdcard/test-evidence app/build/test-evidence || true
+            for evidence in 01-connection-passed.png 02-server-saved.png 03-projects-loaded.png failure.png; do
+              adb exec-out run-as dev.chungjungsoo.gptmobile cat "files/test-evidence/$evidence" > "app/build/test-evidence/$evidence" || rm -f "app/build/test-evidence/$evidence"
+            done
             exit $status
 
       - name: Upload live instrumented test report

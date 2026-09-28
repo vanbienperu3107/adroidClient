@@ -1,5 +1,6 @@
 package dev.chungjungsoo.gptmobile
 
+import android.graphics.Bitmap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -9,10 +10,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.UiDevice
 import dev.chungjungsoo.gptmobile.presentation.ui.main.MainActivity
 import java.io.File
-import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -65,8 +64,12 @@ class LiveOpenCodeUserJourneyInstrumentedTest {
 
     private fun capture(name: String) {
         composeRule.runOnIdle {
-            val directory = File("/sdcard/test-evidence").also { it.mkdirs() }
-            assertTrue("Could not capture $name", UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(File(directory, name)))
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            val context = instrumentation.targetContext
+            val directory = File(context.filesDir, "test-evidence").also { it.mkdirs() }
+            val bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return@runOnIdle
+            File(directory, name).outputStream().use { output -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, output) }
+            bitmap.recycle()
         }
     }
 }
