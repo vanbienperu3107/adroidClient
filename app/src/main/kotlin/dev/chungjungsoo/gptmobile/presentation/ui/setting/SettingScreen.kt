@@ -76,37 +76,54 @@ fun SettingScreen(
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
         ) {
-            ThemeSetting { settingViewModel.openThemeDialog() }
-            ApiType.entries.filterNot { it == ApiType.CLIPROXY }.forEach { apiType ->
-                SettingItem(
-                    title = getPlatformSettingTitle(apiType),
-                    description = getPlatformSettingDescription(apiType),
-                    onItemClick = { onNavigateToPlatformSetting(apiType) },
-                    showTrailingIcon = true,
-                    showLeadingIcon = false
-                )
-            }
-            SettingItem(
-                title = "Cliproxy",
-                description = "Direct chat and model catalog",
-                onItemClick = onNavigateToCliproxy,
-                showTrailingIcon = true,
-                showLeadingIcon = false
+            SettingsNavigationItems(
+                onTheme = settingViewModel::openThemeDialog,
+                onOpenCode = onNavigateToOpenCode,
+                onPlatform = onNavigateToPlatformSetting,
+                onCliproxy = onNavigateToCliproxy,
+                onAbout = onNavigateToAboutPage
             )
-            SettingItem(
-                title = "OpenCode servers",
-                description = "Connect to an OpenCode server",
-                onItemClick = onNavigateToOpenCode,
-                showTrailingIcon = true,
-                showLeadingIcon = false
-            )
-            AboutPageItem(onItemClick = onNavigateToAboutPage)
 
             if (dialogState.isThemeDialogOpen) {
                 ThemeSettingDialog(settingViewModel)
             }
         }
     }
+}
+
+@Composable
+fun SettingsNavigationItems(
+    onTheme: () -> Unit,
+    onOpenCode: () -> Unit,
+    onPlatform: (ApiType) -> Unit,
+    onCliproxy: () -> Unit,
+    onAbout: () -> Unit
+) {
+    ThemeSetting(onTheme)
+    ApiType.entries.filterNot { it == ApiType.CLIPROXY }.forEach { apiType ->
+        SettingItem(
+            title = getPlatformSettingTitle(apiType),
+            description = getPlatformSettingDescription(apiType),
+            onItemClick = { onPlatform(apiType) },
+            showTrailingIcon = true,
+            showLeadingIcon = false
+        )
+    }
+    SettingItem(
+        title = "Cliproxy",
+        description = "Direct chat and model catalog",
+        onItemClick = onCliproxy,
+        showTrailingIcon = true,
+        showLeadingIcon = false
+    )
+    SettingItem(
+        title = "OpenCode servers",
+        description = "Connect to an OpenCode server",
+        onItemClick = onOpenCode,
+        showTrailingIcon = true,
+        showLeadingIcon = false
+    )
+    AboutPageItem(onItemClick = onAbout)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -150,16 +151,11 @@ fun HomeScreen(
             } else {
                 openCodeState.error?.let { error -> item { Text(error, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) } }
                 items(openCodeSessions.homeHistory(), key = { it.sessionId }) { session ->
-                    ListItem(
-                        modifier = Modifier.fillMaxWidth().combinedClickable(onClick = {
-                            val directory = openCodeState.directory ?: return@combinedClickable
-                            val server = openCodeState.serverId ?: return@combinedClickable
-                            onOpenCodeSession(server, directory, session.sessionId)
-                        }).padding(horizontal = 8.dp),
-                        headlineContent = { Text(session.title) },
-                        supportingContent = { Text("OpenCode chat · ${session.status}") },
-                        leadingContent = { Icon(Icons.Filled.Add, contentDescription = "OpenCode chat") }
-                    )
+                    OpenCodeChatRow(session) {
+                        val directory = openCodeState.directory ?: return@OpenCodeChatRow
+                        val server = openCodeState.serverId ?: return@OpenCodeChatRow
+                        onOpenCodeSession(server, directory, session.sessionId)
+                    }
                 }
                 if (openCodeState.stale) item { Text("Showing cached OpenCode sessions", modifier = Modifier.padding(horizontal = 24.dp)) }
             }
@@ -239,28 +235,16 @@ fun HomeScreen(
             )
         }
         if (showNewChatChoice) {
-            AlertDialog(
-                onDismissRequest = { showNewChatChoice = false },
-                title = { Text("New chat") },
-                text = {
-                    Column {
-                        TextButton(onClick = {
-                            showNewChatChoice = false
-                            startOpenCodeChat()
-                        }, modifier = Modifier.fillMaxWidth()) {
-                            Text("OpenCode", modifier = Modifier.weight(1f))
-                            Text("Uses the server default project")
-                        }
-                        TextButton(onClick = {
-                            showNewChatChoice = false
-                            startDirectChat()
-                        }, modifier = Modifier.fillMaxWidth()) {
-                            Text("Direct provider", modifier = Modifier.weight(1f))
-                            Text("Uses a configured provider")
-                        }
-                    }
+            NewChatChoiceDialog(
+                onDismiss = { showNewChatChoice = false },
+                onOpenCode = {
+                    showNewChatChoice = false
+                    startOpenCodeChat()
                 },
-                confirmButton = { TextButton(onClick = { showNewChatChoice = false }) { Text("Cancel") } }
+                onDirect = {
+                    showNewChatChoice = false
+                    startDirectChat()
+                }
             )
         }
     }
@@ -276,7 +260,18 @@ private fun SectionHeader(title: String, total: Int, onShowAll: () -> Unit) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DirectChatRow(
+fun OpenCodeChatRow(session: dev.chungjungsoo.gptmobile.data.opencode.CachedOpenCodeSession, onClick: () -> Unit) {
+    ListItem(
+        modifier = Modifier.fillMaxWidth().testTag("opencode-chat-${session.sessionId}").combinedClickable(onClick = onClick).padding(horizontal = 8.dp),
+        headlineContent = { Text(session.title) },
+        supportingContent = { Text("OpenCode chat · ${session.status}") },
+        leadingContent = { Icon(Icons.Filled.Add, contentDescription = "OpenCode chat") }
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun DirectChatRow(
     chatRoom: ChatRoom,
     isSelectionMode: Boolean,
     selected: Boolean,
@@ -287,7 +282,7 @@ private fun DirectChatRow(
 ) {
     val usingPlatform = chatRoom.enabledPlatform.joinToString(", ") { platformTitles[it].orEmpty() }
     ListItem(
-        modifier = Modifier.fillMaxWidth().combinedClickable(onLongClick = onLongClick, onClick = onClick).padding(horizontal = 8.dp),
+        modifier = Modifier.fillMaxWidth().testTag("direct-chat-${chatRoom.id}").combinedClickable(onLongClick = onLongClick, onClick = onClick).padding(horizontal = 8.dp),
         headlineContent = { Text(chatRoom.title) },
         supportingContent = { Text(if (usingPlatform.isBlank()) "Direct provider" else "Direct provider · $usingPlatform") },
         leadingContent = {
@@ -302,7 +297,7 @@ private fun DirectChatRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopAppBar(
+fun HomeTopAppBar(
     isSelectionMode: Boolean,
     selectedChats: Int,
     searchOpen: Boolean,
@@ -337,6 +332,27 @@ private fun HomeTopAppBar(
             }
         },
         scrollBehavior = scrollBehavior
+    )
+}
+
+@Composable
+fun NewChatChoiceDialog(onDismiss: () -> Unit, onOpenCode: () -> Unit, onDirect: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New chat") },
+        text = {
+            Column {
+                TextButton(onClick = onOpenCode, modifier = Modifier.fillMaxWidth().testTag("new-chat-opencode")) {
+                    Text("OpenCode", modifier = Modifier.weight(1f))
+                    Text("Uses the server default project")
+                }
+                TextButton(onClick = onDirect, modifier = Modifier.fillMaxWidth().testTag("new-chat-direct")) {
+                    Text("Direct provider", modifier = Modifier.weight(1f))
+                    Text("Uses a configured provider")
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 
