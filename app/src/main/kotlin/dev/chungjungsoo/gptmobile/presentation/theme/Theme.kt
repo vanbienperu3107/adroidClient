@@ -423,9 +423,10 @@ fun GPTMobileTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            WindowCompat.setDecorFitsSystemWindows(window, false)
-            window.statusBarColor = Color.Transparent.toArgb()
-            window.navigationBarColor = Color.Transparent.toArgb()
+            // Board layouts begin below the system bar, matching the approved 390x844 frames.
+            WindowCompat.setDecorFitsSystemWindows(window, true)
+            window.statusBarColor = Color.White.toArgb()
+            window.navigationBarColor = Color.White.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
         }
     }
