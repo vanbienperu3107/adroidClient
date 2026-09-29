@@ -12,7 +12,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.platform.io.PlatformTestStorageRegistry
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseData
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeHistoryMessage
 import dev.chungjungsoo.gptmobile.data.opencode.OpenCodeHistoryPart
@@ -22,8 +22,6 @@ import dev.chungjungsoo.gptmobile.presentation.common.BoardRow
 import dev.chungjungsoo.gptmobile.presentation.common.BoardSection
 import dev.chungjungsoo.gptmobile.presentation.ui.opencode.BoardOpenCodeTimeline
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.SettingsNavigationItems
-import java.io.File
-import java.io.FileOutputStream
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -80,9 +78,7 @@ class FigmaBoardVisualInstrumentedTest {
     }
 
     private fun write(name: String) {
-        val dir = InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir("figma-evidence") ?: error("External test storage unavailable")
-        dir.mkdirs()
-        FileOutputStream(File(dir, name)).use { output ->
+        PlatformTestStorageRegistry.getInstance().openOutputFile(name).use { output ->
             check(composeRule.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, output))
         }
     }
