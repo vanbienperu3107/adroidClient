@@ -94,7 +94,7 @@ class FigmaBoardVisualInstrumentedTest {
 
     private fun write(name: String) {
         composeRule.waitForIdle()
-        val dir = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "figma-evidence").also { it.mkdirs() }
+        val dir = requireNotNull(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir("figma-evidence")).also { it.mkdirs() }
         val image = composeRule.onNodeWithTag("figma-evidence-screen").captureToImage()
         check(image.width >= 300 && image.height >= 600) { "Expected a full emulator frame, got ${image.width}x${image.height}" }
         FileOutputStream(File(dir, name)).use { output -> check(image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, output)) }
