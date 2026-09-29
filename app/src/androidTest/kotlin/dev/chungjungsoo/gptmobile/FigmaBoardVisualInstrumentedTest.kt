@@ -7,9 +7,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -35,7 +36,7 @@ class FigmaBoardVisualInstrumentedTest {
     @Test fun capturesApprovedChatsBoard() {
         composeRule.setContent {
             MaterialTheme {
-                Column(Modifier.fillMaxSize()) {
+                Column(Modifier.fillMaxSize().testTag("figma-evidence-screen")) {
                     BoardHeader("Chats", action = "⌕")
                     BoardRow("New chat", "OpenCode or Direct provider", "✎", {}, trailing = "Choose", Modifier.padding(18.dp))
                     BoardSection("OpenCode chats", Modifier.padding(horizontal = 18.dp))
@@ -57,7 +58,7 @@ class FigmaBoardVisualInstrumentedTest {
         )
         composeRule.setContent {
             MaterialTheme {
-                Column(Modifier.fillMaxSize()) {
+                Column(Modifier.fillMaxSize().testTag("figma-evidence-screen")) {
                     BoardHeader("Figma MCP review", "OpenCode chat · Engineering project", {}, "⋮")
                     BoardOpenCodeTimeline(Modifier.weight(1f), data, false, OpenCodeModelOption("cliproxy", "gpt-5.6-terra", "gpt-5.6-terra", listOf("high")), "high", {})
                     BoardRow("Ask OpenCode…", "gpt-5.6-terra · high", "+", {}, trailing = "↑", modifier = Modifier.padding(18.dp))
@@ -70,7 +71,7 @@ class FigmaBoardVisualInstrumentedTest {
     @Test fun capturesApprovedSettingsBoard() {
         composeRule.setContent {
             MaterialTheme {
-                Column(Modifier.fillMaxSize()) {
+                Column(Modifier.fillMaxSize().testTag("figma-evidence-screen")) {
                     BoardHeader("Settings", "Configure app, providers and workspace", {}, "⋮")
                     SettingsNavigationItems({}, {}, {}, {}, {})
                 }
@@ -82,7 +83,7 @@ class FigmaBoardVisualInstrumentedTest {
     private fun write(name: String) {
         val dir = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "figma-evidence").also { it.mkdirs() }
         FileOutputStream(File(dir, name)).use { output ->
-            check(composeRule.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, output))
+            check(composeRule.onNodeWithTag("figma-evidence-screen").captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, output))
         }
     }
 }
