@@ -1,6 +1,7 @@
 package dev.chungjungsoo.gptmobile
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
@@ -78,11 +80,23 @@ class FigmaBoardVisualInstrumentedTest {
         write("figma-settings.png")
     }
 
-    @Composable private fun Frame(content: @Composable () -> Unit) = MaterialTheme { Box(Modifier.requiredSize(390.dp, 844.dp).testTag("figma-evidence-screen")) { content() } }
+    @Composable
+    private fun Frame(content: @Composable () -> Unit) = MaterialTheme {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .testTag("figma-evidence-screen")
+        ) {
+            Box(Modifier.requiredSize(390.dp, 844.dp)) { content() }
+        }
+    }
 
     private fun write(name: String) {
         composeRule.waitForIdle()
         val dir = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "figma-evidence").also { it.mkdirs() }
-        FileOutputStream(File(dir, name)).use { output -> check(composeRule.onNodeWithTag("figma-evidence-screen").captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, output)) }
+        val image = composeRule.onNodeWithTag("figma-evidence-screen").captureToImage()
+        check(image.width >= 300 && image.height >= 600) { "Expected a full emulator frame, got ${image.width}x${image.height}" }
+        FileOutputStream(File(dir, name)).use { output -> check(image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, output)) }
     }
 }
