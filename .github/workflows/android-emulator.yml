@@ -51,7 +51,10 @@ jobs:
           script: |
             ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.OpenCodeCacheInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeVaultInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeModelPickerInstrumentedTest,dev.chungjungsoo.gptmobile.ApprovedUiUserJourneyInstrumentedTest,dev.chungjungsoo.gptmobile.FigmaBoardVisualInstrumentedTest
             mkdir -p app/build/reports/figma-board
-            adb -s emulator-5554 pull /sdcard/googletest/test_outputfiles app/build/reports/figma-board
+            for name in figma-chats.png figma-opencode-chat.png figma-settings.png; do
+              adb -s emulator-5554 exec-out run-as dev.chungjungsoo.gptmobile cat "files/figma-evidence/$name" > "app/build/reports/figma-board/$name"
+              test -s "app/build/reports/figma-board/$name"
+            done
 
       - name: Upload Figma board screenshots
         if: always()
