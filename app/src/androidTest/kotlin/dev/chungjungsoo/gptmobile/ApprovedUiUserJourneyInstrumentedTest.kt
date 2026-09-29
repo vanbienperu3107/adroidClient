@@ -1,5 +1,6 @@
 package dev.chungjungsoo.gptmobile
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -35,9 +36,11 @@ class ApprovedUiUserJourneyInstrumentedTest {
         val direct = ChatRoom(7, "Direct history", listOf(ApiType.OPENAI))
         composeRule.setContent {
             MaterialTheme {
-                HomeTopAppBar(false, 0, false, "", androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(), {}, { route = "search" }, { route = "settings" }, {})
-                OpenCodeChatRow(openCode) { route = "opencode:${openCode.serverId}:${openCode.directory}:${openCode.sessionId}" }
-                DirectChatRow(direct, false, false, emptyMap(), {}, { route = "direct:${direct.id}" }, {})
+                Column {
+                    HomeTopAppBar(false, 0, false, "", androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(), {}, { route = "search" }, { route = "settings" }, {})
+                    OpenCodeChatRow(openCode) { route = "opencode:${openCode.serverId}:${openCode.directory}:${openCode.sessionId}" }
+                    DirectChatRow(direct, false, false, emptyMap(), {}, { route = "direct:${direct.id}" }, {})
+                }
             }
         }
 
@@ -56,7 +59,6 @@ class ApprovedUiUserJourneyInstrumentedTest {
         composeRule.setContent { MaterialTheme { NewChatChoiceDialog({}, { choice = "opencode" }, { choice = "direct" }) } }
         composeRule.onNodeWithTag("new-chat-opencode").performClick()
         assertEquals("opencode", choice)
-        composeRule.setContent { MaterialTheme { NewChatChoiceDialog({}, { choice = "opencode" }, { choice = "direct" }) } }
         composeRule.onNodeWithTag("new-chat-direct").performClick()
         assertEquals("direct", choice)
     }
@@ -65,13 +67,15 @@ class ApprovedUiUserJourneyInstrumentedTest {
         var destination = ""
         composeRule.setContent {
             MaterialTheme {
-                SettingsNavigationItems(
-                    onTheme = { destination = "theme" },
-                    onOpenCode = { destination = "opencode" },
-                    onPlatform = { destination = it.name },
-                    onCliproxy = { destination = "cliproxy" },
-                    onAbout = { destination = "about" }
-                )
+                Column {
+                    SettingsNavigationItems(
+                        onTheme = { destination = "theme" },
+                        onOpenCode = { destination = "opencode" },
+                        onPlatform = { destination = it.name },
+                        onCliproxy = { destination = "cliproxy" },
+                        onAbout = { destination = "about" }
+                    )
+                }
             }
         }
         composeRule.onNodeWithText("Theme Settings").performClick()
@@ -101,10 +105,8 @@ class ApprovedUiUserJourneyInstrumentedTest {
         }
         composeRule.onNodeWithText("Default project").assertIsDisplayed().performClick()
         assertEquals("default", action)
-        composeRule.setContent { MaterialTheme { ServerActionMenu(true, {}, {}, { action = "edit" }, { action = "delete" }) } }
         composeRule.onNodeWithText("Edit").performClick()
         assertEquals("edit", action)
-        composeRule.setContent { MaterialTheme { ServerActionMenu(true, {}, {}, {}, { action = "delete" }) } }
         composeRule.onNodeWithText("Delete").performClick()
         assertEquals("delete", action)
         composeRule.onNodeWithText("Projects").assertDoesNotExist()

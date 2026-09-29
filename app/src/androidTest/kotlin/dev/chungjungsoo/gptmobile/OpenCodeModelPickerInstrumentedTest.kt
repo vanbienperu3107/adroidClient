@@ -2,6 +2,7 @@ package dev.chungjungsoo.gptmobile
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -47,19 +48,21 @@ class OpenCodeModelPickerInstrumentedTest {
     @Test fun reasoningPickerReturnsSelectedServerLevelOrDefault() {
         val model = OpenCodeModelOption("cliproxy", "gpt-5.6-terra", "GPT 5.6 Terra", listOf("low", "high", "xhigh"))
         var selected: String? = "high"
+        var visible by mutableStateOf(true)
         composeRule.setContent {
             MaterialTheme {
-                BoardVariantPicker(model, selected, {}, { selected = it })
+                if (visible) {
+                    BoardVariantPicker(model, selected, {}, {
+                        selected = it
+                        visible = false
+                    })
+                }
             }
         }
 
         composeRule.onNodeWithText("Server default").performClick()
         assertEquals(null, selected)
-        composeRule.setContent {
-            MaterialTheme {
-                BoardVariantPicker(model, selected, {}, { selected = it })
-            }
-        }
+        visible = true
         composeRule.onNodeWithText("xhigh").performClick()
         assertEquals("xhigh", selected)
     }
