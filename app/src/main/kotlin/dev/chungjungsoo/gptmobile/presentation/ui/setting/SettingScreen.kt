@@ -11,6 +11,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.chungjungsoo.gptmobile.data.model.ApiType
@@ -39,14 +40,14 @@ fun SettingScreen(modifier: Modifier = Modifier, settingViewModel: SettingViewMo
 @Composable
 fun SettingsNavigationItems(onTheme: () -> Unit, onOpenCode: () -> Unit, onPlatform: (ApiType) -> Unit, onCliproxy: () -> Unit, onAbout: () -> Unit) {
     BoardSection("Appearance")
-    BoardRow("Theme Settings", "Dynamic theme, Dark mode", "◐", onTheme)
+    BoardRow("Theme Settings", "Dynamic theme, Dark mode", "◐", onTheme, modifier = Modifier.testTag("settings-theme"))
     BoardSection("Providers")
-    listOf(ApiType.OPENAI, ApiType.ANTHROPIC, ApiType.GOOGLE, ApiType.OLLAMA).forEach { type -> BoardRow("${type.name.lowercase().replaceFirstChar { it.uppercase() }} Settings", "API key, model, system prompt", "•", { onPlatform(type) }) }
+    listOf(ApiType.OPENAI, ApiType.ANTHROPIC, ApiType.GOOGLE, ApiType.OLLAMA).forEach { type -> BoardRow("${type.name.lowercase().replaceFirstChar { it.uppercase() }} Settings", "API key, model, system prompt", "•", { onPlatform(type) }, modifier = Modifier.testTag("settings-${type.name.lowercase()}")) }
     BoardSection("Connections")
-    BoardRow("Cliproxy", "Direct provider configuration", "○", onCliproxy)
-    BoardRow("OpenCode servers", "Server profiles and default project", "▣", onOpenCode)
+    BoardRow("Cliproxy", "Direct provider configuration", "○", onCliproxy, modifier = Modifier.testTag("settings-cliproxy"))
+    BoardRow("OpenCode servers", "Server profiles and default project", "▣", onOpenCode, modifier = Modifier.testTag("settings-opencode"))
     BoardSection("App")
-    BoardRow("About", "Version, license, feedback", "i", onAbout)
+    BoardRow("About", "Version, license, feedback", "i", onAbout, modifier = Modifier.testTag("settings-about"))
 }
 
 @Composable

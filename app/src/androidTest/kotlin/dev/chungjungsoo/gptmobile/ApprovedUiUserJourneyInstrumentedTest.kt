@@ -78,21 +78,21 @@ class ApprovedUiUserJourneyInstrumentedTest {
                 }
             }
         }
-        composeRule.onNodeWithText("Theme Settings").performClick()
+        composeRule.onNodeWithTag("settings-theme").performClick()
         assertEquals("theme", destination)
-        composeRule.onNodeWithText("OpenCode servers").performClick()
+        composeRule.onNodeWithTag("settings-opencode").performClick()
         assertEquals("opencode", destination)
-        composeRule.onNodeWithText("Cliproxy").performClick()
+        composeRule.onNodeWithTag("settings-cliproxy").performClick()
         assertEquals("cliproxy", destination)
-        composeRule.onNodeWithText("About").performClick()
+        composeRule.onNodeWithTag("settings-about").performClick()
         assertEquals("about", destination)
-        composeRule.onNodeWithText("OpenAI Settings").performClick()
+        composeRule.onNodeWithTag("settings-openai").performClick()
         assertEquals("OPENAI", destination)
-        composeRule.onNodeWithText("Anthropic Settings").performClick()
+        composeRule.onNodeWithTag("settings-anthropic").performClick()
         assertEquals("ANTHROPIC", destination)
-        composeRule.onNodeWithText("Google Settings").performClick()
+        composeRule.onNodeWithTag("settings-google").performClick()
         assertEquals("GOOGLE", destination)
-        composeRule.onNodeWithText("Ollama Settings").performClick()
+        composeRule.onNodeWithTag("settings-ollama").performClick()
         assertEquals("OLLAMA", destination)
     }
 
