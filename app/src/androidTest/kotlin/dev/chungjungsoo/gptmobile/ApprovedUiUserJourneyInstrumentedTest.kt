@@ -1,15 +1,19 @@
 package dev.chungjungsoo.gptmobile
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.chungjungsoo.gptmobile.data.database.entity.ChatRoom
 import dev.chungjungsoo.gptmobile.data.model.ApiType
@@ -36,7 +40,7 @@ class ApprovedUiUserJourneyInstrumentedTest {
         val direct = ChatRoom(7, "Direct history", listOf(ApiType.OPENAI))
         composeRule.setContent {
             MaterialTheme {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     HomeTopAppBar(false, 0, false, "", androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(), {}, { route = "search" }, { route = "settings" }, {})
                     OpenCodeChatRow(openCode) { route = "opencode:${openCode.serverId}:${openCode.directory}:${openCode.sessionId}" }
                     DirectChatRow(direct, false, false, emptyMap(), {}, { route = "direct:${direct.id}" }, {})
@@ -78,21 +82,21 @@ class ApprovedUiUserJourneyInstrumentedTest {
                 }
             }
         }
-        composeRule.onNodeWithTag("settings-theme").performClick()
+        composeRule.onNodeWithTag("settings-theme").performScrollTo().performClick()
         assertEquals("theme", destination)
-        composeRule.onNodeWithTag("settings-opencode").performClick()
+        composeRule.onNodeWithTag("settings-opencode").performScrollTo().performClick()
         assertEquals("opencode", destination)
-        composeRule.onNodeWithTag("settings-cliproxy").performClick()
+        composeRule.onNodeWithTag("settings-cliproxy").performScrollTo().performClick()
         assertEquals("cliproxy", destination)
-        composeRule.onNodeWithTag("settings-about").performClick()
+        composeRule.onNodeWithTag("settings-about").performScrollTo().performClick()
         assertEquals("about", destination)
-        composeRule.onNodeWithTag("settings-openai").performClick()
+        composeRule.onNodeWithTag("settings-openai").performScrollTo().performClick()
         assertEquals("OPENAI", destination)
-        composeRule.onNodeWithTag("settings-anthropic").performClick()
+        composeRule.onNodeWithTag("settings-anthropic").performScrollTo().performClick()
         assertEquals("ANTHROPIC", destination)
-        composeRule.onNodeWithTag("settings-google").performClick()
+        composeRule.onNodeWithTag("settings-google").performScrollTo().performClick()
         assertEquals("GOOGLE", destination)
-        composeRule.onNodeWithTag("settings-ollama").performClick()
+        composeRule.onNodeWithTag("settings-ollama").performScrollTo().performClick()
         assertEquals("OLLAMA", destination)
     }
 
