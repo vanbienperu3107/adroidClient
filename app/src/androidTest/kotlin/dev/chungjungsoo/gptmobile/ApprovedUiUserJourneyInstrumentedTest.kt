@@ -74,7 +74,7 @@ class ApprovedUiUserJourneyInstrumentedTest {
                 )
             }
         }
-        composeRule.onNodeWithText("Theme").performClick()
+        composeRule.onNodeWithText("Theme Settings").performClick()
         assertEquals("theme", destination)
         composeRule.onNodeWithText("OpenCode servers").performClick()
         assertEquals("opencode", destination)
@@ -82,13 +82,13 @@ class ApprovedUiUserJourneyInstrumentedTest {
         assertEquals("cliproxy", destination)
         composeRule.onNodeWithText("About").performClick()
         assertEquals("about", destination)
-        composeRule.onNodeWithText("OpenAI").performClick()
+        composeRule.onNodeWithText("OpenAI Settings").performClick()
         assertEquals("OPENAI", destination)
-        composeRule.onNodeWithText("Anthropic").performClick()
+        composeRule.onNodeWithText("Anthropic Settings").performClick()
         assertEquals("ANTHROPIC", destination)
-        composeRule.onNodeWithText("Google").performClick()
+        composeRule.onNodeWithText("Google Settings").performClick()
         assertEquals("GOOGLE", destination)
-        composeRule.onNodeWithText("Ollama").performClick()
+        composeRule.onNodeWithText("Ollama Settings").performClick()
         assertEquals("OLLAMA", destination)
     }
 

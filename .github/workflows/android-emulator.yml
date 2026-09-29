@@ -48,7 +48,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
-          script: ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.OpenCodeCacheInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeVaultInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeModelPickerInstrumentedTest
+          script: ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.OpenCodeCacheInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeVaultInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeModelPickerInstrumentedTest,dev.chungjungsoo.gptmobile.ApprovedUiUserJourneyInstrumentedTest
 
   live-opencode-emulator:
     name: API 34 live OpenCode smoke test

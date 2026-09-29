@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -42,8 +43,8 @@ fun UserChatBubble(
             modifier = modifier,
             shape = RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.onSurface,
-                contentColor = MaterialTheme.colorScheme.surface
+                containerColor = Color(0xFF121212),
+                contentColor = Color.White
             )
         ) {
             RichChatContent(text, Modifier.padding(16.dp))
@@ -66,11 +67,12 @@ fun OpponentChatBubble(
     Column(modifier = modifier) {
         Column(horizontalAlignment = Alignment.Start) {
             Card(
-                shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
+                shape = RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF141414)
                 ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD1D1D1)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 RichChatContent(text.trimIndent() + if (isLoading) "▊" else "", Modifier.padding(24.dp))
