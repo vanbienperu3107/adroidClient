@@ -48,13 +48,10 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
-          script: ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.OpenCodeCacheInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeVaultInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeModelPickerInstrumentedTest,dev.chungjungsoo.gptmobile.ApprovedUiUserJourneyInstrumentedTest,dev.chungjungsoo.gptmobile.FigmaBoardVisualInstrumentedTest
-
-      - name: Collect Figma board screenshots
-        if: always()
-        run: |
-          mkdir -p app/build/reports/figma-board
-          adb -s emulator-5554 pull /sdcard/Android/data/dev.chungjungsoo.gptmobile/files/figma-evidence app/build/reports/figma-board || true
+          script: |
+            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.OpenCodeCacheInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeVaultInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeModelPickerInstrumentedTest,dev.chungjungsoo.gptmobile.ApprovedUiUserJourneyInstrumentedTest,dev.chungjungsoo.gptmobile.FigmaBoardVisualInstrumentedTest
+            mkdir -p app/build/reports/figma-board
+            adb -s emulator-5554 pull /sdcard/Android/data/dev.chungjungsoo.gptmobile/files/figma-evidence app/build/reports/figma-board
 
       - name: Upload Figma board screenshots
         if: always()
