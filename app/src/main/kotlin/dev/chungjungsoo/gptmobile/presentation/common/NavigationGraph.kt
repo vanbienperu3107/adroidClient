@@ -78,11 +78,20 @@ fun NavGraphBuilder.openCodeNavigation(navController: NavHostController) {
     composable(Route.OPEN_CODE_SERVERS) {
         OpenCodeServerListScreen(
             onBack = { navController.navigateUp() },
-            onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) }
+            onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new").replace("{returnToChats}", "true")) }
         )
     }
-    composable(Route.OPEN_CODE_SERVER_EDIT, arguments = listOf(navArgument("serverId") { defaultValue = "new" })) {
-        OpenCodeServerEditScreen(onBack = { navController.navigateUp() })
+    composable(Route.OPEN_CODE_SERVER_EDIT, arguments = listOf(navArgument("serverId") { defaultValue = "new" }, navArgument("returnToChats") { defaultValue = "false" })) { entry ->
+        OpenCodeServerEditScreen(
+            onBack = { navController.navigateUp() },
+            onSaved = {
+                if (entry.arguments?.getString("returnToChats") == "true") {
+                    navController.navigate(Route.CHAT_LIST) { popUpTo(Route.CHAT_LIST) { inclusive = true } }
+                } else {
+                    navController.navigateUp()
+                }
+            }
+        )
     }
 }
 
@@ -320,7 +329,7 @@ fun NavGraphBuilder.settingNavigation(navController: NavHostController) {
         composable(Route.OPEN_CODE_SERVERS_SETTINGS) {
             OpenCodeServerListScreen(
                 onBack = { navController.navigateUp() },
-                onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new")) }
+                onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new").replace("{returnToChats}", "false")) }
             )
         }
     }

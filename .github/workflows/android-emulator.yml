@@ -48,7 +48,20 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
-          script: ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.OpenCodeCacheInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeVaultInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeModelPickerInstrumentedTest
+          script: |
+            adb -s emulator-5554 shell wm size 390x844
+            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.OpenCodeCacheInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeVaultInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeModelPickerInstrumentedTest,dev.chungjungsoo.gptmobile.ApprovedUiUserJourneyInstrumentedTest,dev.chungjungsoo.gptmobile.FigmaBoardVisualInstrumentedTest
+            mkdir -p app/build/reports/figma-board
+            adb -s emulator-5554 pull /sdcard/Download/figma-evidence/figma-chats.png app/build/reports/figma-board/figma-chats.png
+            adb -s emulator-5554 pull /sdcard/Download/figma-evidence/figma-opencode-chat.png app/build/reports/figma-board/figma-opencode-chat.png
+            adb -s emulator-5554 pull /sdcard/Download/figma-evidence/figma-settings.png app/build/reports/figma-board/figma-settings.png
+
+      - name: Upload Figma board screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: figma-board-screenshots-${{ github.sha }}
+          path: app/build/reports/figma-board/
 
   live-opencode-emulator:
     name: API 34 live OpenCode smoke test

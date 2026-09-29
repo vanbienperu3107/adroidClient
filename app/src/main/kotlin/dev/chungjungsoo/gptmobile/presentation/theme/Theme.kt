@@ -27,41 +27,41 @@ data class ExtendedColorScheme(
 )
 
 private val lightScheme = lightColorScheme(
-    primary = primaryLight,
-    onPrimary = onPrimaryLight,
-    primaryContainer = primaryContainerLight,
-    onPrimaryContainer = onPrimaryContainerLight,
-    secondary = secondaryLight,
-    onSecondary = onSecondaryLight,
-    secondaryContainer = secondaryContainerLight,
-    onSecondaryContainer = onSecondaryContainerLight,
-    tertiary = tertiaryLight,
-    onTertiary = onTertiaryLight,
-    tertiaryContainer = tertiaryContainerLight,
-    onTertiaryContainer = onTertiaryContainerLight,
-    error = errorLight,
-    onError = onErrorLight,
-    errorContainer = errorContainerLight,
-    onErrorContainer = onErrorContainerLight,
-    background = backgroundLight,
-    onBackground = onBackgroundLight,
-    surface = surfaceLight,
-    onSurface = onSurfaceLight,
-    surfaceVariant = surfaceVariantLight,
-    onSurfaceVariant = onSurfaceVariantLight,
-    outline = outlineLight,
-    outlineVariant = outlineVariantLight,
-    scrim = scrimLight,
-    inverseSurface = inverseSurfaceLight,
-    inverseOnSurface = inverseOnSurfaceLight,
-    inversePrimary = inversePrimaryLight,
-    surfaceDim = surfaceDimLight,
-    surfaceBright = surfaceBrightLight,
-    surfaceContainerLowest = surfaceContainerLowestLight,
-    surfaceContainerLow = surfaceContainerLowLight,
-    surfaceContainer = surfaceContainerLight,
-    surfaceContainerHigh = surfaceContainerHighLight,
-    surfaceContainerHighest = surfaceContainerHighestLight
+    primary = Color(0xFF141414),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFF7F7F7),
+    onPrimaryContainer = Color(0xFF141414),
+    secondary = Color(0xFF616161),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFF7F7F7),
+    onSecondaryContainer = Color(0xFF141414),
+    tertiary = Color(0xFF616161),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFF7F7F7),
+    onTertiaryContainer = Color(0xFF141414),
+    error = Color(0xFFA63030),
+    onError = Color.White,
+    errorContainer = Color(0xFFFFE9E7),
+    onErrorContainer = Color(0xFF410002),
+    background = Color.White,
+    onBackground = Color(0xFF141414),
+    surface = Color.White,
+    onSurface = Color(0xFF141414),
+    surfaceVariant = Color(0xFFF7F7F7),
+    onSurfaceVariant = Color(0xFF616161),
+    outline = Color(0xFFD1D1D1),
+    outlineVariant = Color(0xFFD1D1D1),
+    scrim = Color.Black,
+    inverseSurface = Color(0xFF141414),
+    inverseOnSurface = Color.White,
+    inversePrimary = Color.White,
+    surfaceDim = Color(0xFFECECEA),
+    surfaceBright = Color.White,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF7F7F7),
+    surfaceContainer = Color(0xFFF7F7F7),
+    surfaceContainerHigh = Color(0xFFF7F7F7),
+    surfaceContainerHighest = Color(0xFFF7F7F7)
 )
 
 private val darkScheme = darkColorScheme(
@@ -401,7 +401,8 @@ fun GPTMobileTheme(
     themeMode: ThemeMode = ThemeMode.LIGHT,
     content: @Composable () -> Unit
 ) {
-    val useDynamicColor = dynamicTheme == DynamicTheme.ON && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    // The approved board has a fixed neutral palette; wallpaper colors would break visual parity.
+    val useDynamicColor = false
     val useDarkTheme = when (themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.DARK -> true
@@ -422,9 +423,10 @@ fun GPTMobileTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            WindowCompat.setDecorFitsSystemWindows(window, false)
-            window.statusBarColor = Color.Transparent.toArgb()
-            window.navigationBarColor = Color.Transparent.toArgb()
+            // Board layouts begin below the system bar, matching the approved 390x844 frames.
+            WindowCompat.setDecorFitsSystemWindows(window, true)
+            window.statusBarColor = Color.White.toArgb()
+            window.navigationBarColor = Color.White.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
         }
     }

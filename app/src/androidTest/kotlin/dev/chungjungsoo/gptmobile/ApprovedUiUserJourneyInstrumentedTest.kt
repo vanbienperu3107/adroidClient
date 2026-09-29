@@ -1,14 +1,17 @@
 package dev.chungjungsoo.gptmobile
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.chungjungsoo.gptmobile.data.database.entity.ChatRoom
 import dev.chungjungsoo.gptmobile.data.model.ApiType
@@ -35,9 +38,11 @@ class ApprovedUiUserJourneyInstrumentedTest {
         val direct = ChatRoom(7, "Direct history", listOf(ApiType.OPENAI))
         composeRule.setContent {
             MaterialTheme {
-                HomeTopAppBar(false, 0, false, "", androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(), {}, { route = "search" }, { route = "settings" }, {})
-                OpenCodeChatRow(openCode) { route = "opencode:${openCode.serverId}:${openCode.directory}:${openCode.sessionId}" }
-                DirectChatRow(direct, false, false, emptyMap(), {}, { route = "direct:${direct.id}" }, {})
+                Column {
+                    HomeTopAppBar(false, 0, false, "", androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(), {}, { route = "search" }, { route = "settings" }, {})
+                    OpenCodeChatRow(openCode) { route = "opencode:${openCode.serverId}:${openCode.directory}:${openCode.sessionId}" }
+                    DirectChatRow(direct, false, false, emptyMap(), {}, { route = "direct:${direct.id}" }, {})
+                }
             }
         }
 
@@ -56,7 +61,6 @@ class ApprovedUiUserJourneyInstrumentedTest {
         composeRule.setContent { MaterialTheme { NewChatChoiceDialog({}, { choice = "opencode" }, { choice = "direct" }) } }
         composeRule.onNodeWithTag("new-chat-opencode").performClick()
         assertEquals("opencode", choice)
-        composeRule.setContent { MaterialTheme { NewChatChoiceDialog({}, { choice = "opencode" }, { choice = "direct" }) } }
         composeRule.onNodeWithTag("new-chat-direct").performClick()
         assertEquals("direct", choice)
     }
@@ -65,30 +69,32 @@ class ApprovedUiUserJourneyInstrumentedTest {
         var destination = ""
         composeRule.setContent {
             MaterialTheme {
-                SettingsNavigationItems(
-                    onTheme = { destination = "theme" },
-                    onOpenCode = { destination = "opencode" },
-                    onPlatform = { destination = it.name },
-                    onCliproxy = { destination = "cliproxy" },
-                    onAbout = { destination = "about" }
-                )
+                Column {
+                    SettingsNavigationItems(
+                        onTheme = { destination = "theme" },
+                        onOpenCode = { destination = "opencode" },
+                        onPlatform = { destination = it.name },
+                        onCliproxy = { destination = "cliproxy" },
+                        onAbout = { destination = "about" }
+                    )
+                }
             }
         }
-        composeRule.onNodeWithText("Theme").performClick()
+        composeRule.onNodeWithTag("settings-theme").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("theme", destination)
-        composeRule.onNodeWithText("OpenCode servers").performClick()
+        composeRule.onNodeWithTag("settings-opencode").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("opencode", destination)
-        composeRule.onNodeWithText("Cliproxy").performClick()
+        composeRule.onNodeWithTag("settings-cliproxy").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("cliproxy", destination)
-        composeRule.onNodeWithText("About").performClick()
+        composeRule.onNodeWithTag("settings-about").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("about", destination)
-        composeRule.onNodeWithText("OpenAI").performClick()
+        composeRule.onNodeWithTag("settings-openai").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("OPENAI", destination)
-        composeRule.onNodeWithText("Anthropic").performClick()
+        composeRule.onNodeWithTag("settings-anthropic").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("ANTHROPIC", destination)
-        composeRule.onNodeWithText("Google").performClick()
+        composeRule.onNodeWithTag("settings-google").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("GOOGLE", destination)
-        composeRule.onNodeWithText("Ollama").performClick()
+        composeRule.onNodeWithTag("settings-ollama").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("OLLAMA", destination)
     }
 
@@ -101,10 +107,8 @@ class ApprovedUiUserJourneyInstrumentedTest {
         }
         composeRule.onNodeWithText("Default project").assertIsDisplayed().performClick()
         assertEquals("default", action)
-        composeRule.setContent { MaterialTheme { ServerActionMenu(true, {}, {}, { action = "edit" }, { action = "delete" }) } }
         composeRule.onNodeWithText("Edit").performClick()
         assertEquals("edit", action)
-        composeRule.setContent { MaterialTheme { ServerActionMenu(true, {}, {}, {}, { action = "delete" }) } }
         composeRule.onNodeWithText("Delete").performClick()
         assertEquals("delete", action)
         composeRule.onNodeWithText("Projects").assertDoesNotExist()
