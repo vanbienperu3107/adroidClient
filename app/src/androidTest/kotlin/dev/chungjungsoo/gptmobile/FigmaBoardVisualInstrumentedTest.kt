@@ -1,6 +1,5 @@
 package dev.chungjungsoo.gptmobile
 
-import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,7 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -29,8 +27,6 @@ import dev.chungjungsoo.gptmobile.presentation.common.BoardRow
 import dev.chungjungsoo.gptmobile.presentation.common.BoardSection
 import dev.chungjungsoo.gptmobile.presentation.ui.opencode.BoardOpenCodeTimeline
 import dev.chungjungsoo.gptmobile.presentation.ui.setting.SettingsNavigationItems
-import java.io.File
-import java.io.FileOutputStream
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -95,10 +91,9 @@ class FigmaBoardVisualInstrumentedTest {
 
     private fun write(name: String) {
         composeRule.waitForIdle()
-        val dir = requireNotNull(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir("figma-evidence")).also { it.mkdirs() }
-        Log.i("FigmaEvidence", "Writing $name to ${dir.absolutePath}")
         val image = composeRule.onNodeWithTag("figma-evidence-screen").captureToImage()
         check(image.width >= 300 && image.height >= 600) { "Expected a full emulator frame, got ${image.width}x${image.height}" }
-        FileOutputStream(File(dir, name)).use { output -> check(image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, output)) }
+        Log.i("FigmaEvidence", "Capturing $name at ${image.width}x${image.height}")
+        InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("screencap -p /sdcard/Download/$name").close()
     }
 }
