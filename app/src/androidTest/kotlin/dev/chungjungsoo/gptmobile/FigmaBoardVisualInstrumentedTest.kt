@@ -8,8 +8,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -89,7 +91,12 @@ class FigmaBoardVisualInstrumentedTest {
                 .background(Color.White)
                 .testTag("figma-evidence-screen")
         ) {
-            Box(Modifier.requiredSize(390.dp, 844.dp)) { content() }
+            Box(
+                Modifier
+                    .requiredSize(390.dp, 844.dp)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+            ) { content() }
         }
     }
 
