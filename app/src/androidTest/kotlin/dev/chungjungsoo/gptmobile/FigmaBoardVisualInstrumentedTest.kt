@@ -1,6 +1,7 @@
 package dev.chungjungsoo.gptmobile
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -95,6 +96,7 @@ class FigmaBoardVisualInstrumentedTest {
     private fun write(name: String) {
         composeRule.waitForIdle()
         val dir = requireNotNull(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir("figma-evidence")).also { it.mkdirs() }
+        Log.i("FigmaEvidence", "Writing $name to ${dir.absolutePath}")
         val image = composeRule.onNodeWithTag("figma-evidence-screen").captureToImage()
         check(image.width >= 300 && image.height >= 600) { "Expected a full emulator frame, got ${image.width}x${image.height}" }
         FileOutputStream(File(dir, name)).use { output -> check(image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, output)) }

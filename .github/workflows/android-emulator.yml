@@ -52,9 +52,8 @@ jobs:
             adb -s emulator-5554 shell wm size 390x844
             ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.chungjungsoo.gptmobile.OpenCodeCacheInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeVaultInstrumentedTest,dev.chungjungsoo.gptmobile.OpenCodeModelPickerInstrumentedTest,dev.chungjungsoo.gptmobile.ApprovedUiUserJourneyInstrumentedTest,dev.chungjungsoo.gptmobile.FigmaBoardVisualInstrumentedTest
             mkdir -p app/build/reports/figma-board
-            adb -s emulator-5554 pull "$(adb -s emulator-5554 shell find /sdcard/Android/data -name figma-chats.png | tr -d '\r')" app/build/reports/figma-board/figma-chats.png
-            adb -s emulator-5554 pull "$(adb -s emulator-5554 shell find /sdcard/Android/data -name figma-opencode-chat.png | tr -d '\r')" app/build/reports/figma-board/figma-opencode-chat.png
-            adb -s emulator-5554 pull "$(adb -s emulator-5554 shell find /sdcard/Android/data -name figma-settings.png | tr -d '\r')" app/build/reports/figma-board/figma-settings.png
+            adb -s emulator-5554 logcat -d -s FigmaEvidence:I > app/build/reports/figma-board/evidence-path.log
+            adb -s emulator-5554 shell pm list packages > app/build/reports/figma-board/installed-packages.txt
 
       - name: Upload Figma board screenshots
         if: always()
