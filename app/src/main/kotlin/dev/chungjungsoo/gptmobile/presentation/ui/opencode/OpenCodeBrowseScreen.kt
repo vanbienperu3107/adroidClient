@@ -93,7 +93,7 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
     } else {
         Column {
             BoardHeader(data.sessions.firstOrNull { it.sessionId == viewModel.sessionId }?.title ?: "OpenCode chat", "OpenCode chat · ${viewModel.directory ?: "Engineering project"}", back, "⋮", { viewModel.refresh() })
-            OpenCodeTimeline(Modifier.weight(1f), data, loading, selectedModel, selectedVariant) { interaction = it }
+            BoardOpenCodeTimeline(Modifier.weight(1f), data, loading, selectedModel, selectedVariant) { interaction = it }
             Column(Modifier.fillMaxWidth().background(Color.White).padding(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("+", modifier = Modifier.background(BoardSurface, RoundedCornerShape(12.dp)).padding(horizontal = 13.dp, vertical = 8.dp), color = BoardInk)
@@ -123,7 +123,7 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
     if (!loading && !data.locked && data.sessions.isEmpty()) item { BoardRow("No OpenCode chats in this project.", trailing = "") }
 }
 
-@Composable private fun OpenCodeTimeline(modifier: Modifier, data: dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseData, loading: Boolean, model: OpenCodeModelOption?, variant: String?, onInteraction: (CachedOpenCodeInteraction) -> Unit) = LazyColumn(modifier.padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+@Composable fun BoardOpenCodeTimeline(modifier: Modifier, data: dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseData, loading: Boolean, model: OpenCodeModelOption?, variant: String?, onInteraction: (CachedOpenCodeInteraction) -> Unit) = LazyColumn(modifier.padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
     if (loading) item { BoardRow("Loading chat from OpenCode…", "Fetching full history for this chat.", trailing = "", modifier = Modifier.padding(top = 15.dp)) }
     if (data.stale) item { BoardRow("Cached · not synchronized", "Pull to refresh before acting.", trailing = "") }
     if (data.locked) item { BoardRow("Authentication required", "Return to server settings to sign in again", trailing = "") }
