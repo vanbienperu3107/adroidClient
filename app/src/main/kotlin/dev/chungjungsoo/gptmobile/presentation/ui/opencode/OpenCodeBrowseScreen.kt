@@ -19,12 +19,14 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -155,7 +157,15 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
             }
         }
         Card(modifier = Modifier.padding(top = 6.dp).widthIn(max = 326.dp), shape = RoundedCornerShape(if (user) 18.dp else 16.dp), colors = CardDefaults.cardColors(containerColor = if (user) BoardInk else Color.White), border = if (user) null else androidx.compose.foundation.BorderStroke(1.dp, BoardLine)) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { message.parts.forEach { RichChatContent(it.text ?: "[${it.type}]") } }
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (user) {
+                    CompositionLocalProvider(LocalContentColor provides Color.White) {
+                        message.parts.forEach { RichChatContent(it.text ?: "[${it.type}]") }
+                    }
+                } else {
+                    message.parts.forEach { RichChatContent(it.text ?: "[${it.type}]") }
+                }
+            }
         }
     }
 }

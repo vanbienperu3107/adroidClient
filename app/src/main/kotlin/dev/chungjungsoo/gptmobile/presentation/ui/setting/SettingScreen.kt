@@ -40,14 +40,14 @@ fun SettingScreen(modifier: Modifier = Modifier, settingViewModel: SettingViewMo
 @Composable
 fun SettingsNavigationItems(onTheme: () -> Unit, onOpenCode: () -> Unit, onPlatform: (ApiType) -> Unit, onCliproxy: () -> Unit, onAbout: () -> Unit) {
     BoardSection("Appearance")
-    BoardRow("Theme Settings", "Dynamic theme, Dark mode", "◐", onTheme, modifier = Modifier.testTag("settings-theme"))
+    BoardRow("Theme Settings", "Dynamic theme, Dark mode", "◐", onTheme, modifier = Modifier.padding(vertical = 3.dp).testTag("settings-theme"))
     BoardSection("Providers")
-    listOf(ApiType.OPENAI, ApiType.ANTHROPIC, ApiType.GOOGLE, ApiType.OLLAMA).forEach { type -> BoardRow("${type.name.lowercase().replaceFirstChar { it.uppercase() }} Settings", "API key, model, system prompt", "•", { onPlatform(type) }, modifier = Modifier.testTag("settings-${type.name.lowercase()}")) }
+    listOf(ApiType.OPENAI, ApiType.ANTHROPIC, ApiType.GOOGLE, ApiType.OLLAMA).forEach { type -> BoardRow("${type.name.lowercase().replaceFirstChar { it.uppercase() }} Settings", "API key, model, system prompt", "•", { onPlatform(type) }, modifier = Modifier.padding(vertical = 3.dp).testTag("settings-${type.name.lowercase()}")) }
     BoardSection("Connections")
-    BoardRow("Cliproxy", "Direct provider configuration", "○", onCliproxy, modifier = Modifier.testTag("settings-cliproxy"))
-    BoardRow("OpenCode servers", "Server profiles and default project", "▣", onOpenCode, modifier = Modifier.testTag("settings-opencode"))
+    BoardRow("Cliproxy", "Direct provider configuration", "○", onCliproxy, modifier = Modifier.padding(vertical = 3.dp).testTag("settings-cliproxy"))
+    BoardRow("OpenCode servers", "Server profiles and default project", "▣", onOpenCode, modifier = Modifier.padding(vertical = 3.dp).testTag("settings-opencode"))
     BoardSection("App")
-    BoardRow("About", "Version, license, feedback", "i", onAbout, modifier = Modifier.testTag("settings-about"))
+    BoardRow("About", "Version, license, feedback", "i", onAbout, modifier = Modifier.padding(vertical = 3.dp).testTag("settings-about"))
 }
 
 @Composable
