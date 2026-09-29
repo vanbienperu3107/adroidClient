@@ -1,6 +1,9 @@
 package dev.chungjungsoo.gptmobile
 
-import android.util.Log
+import android.content.ContentValues
+import android.graphics.Bitmap
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -93,7 +97,15 @@ class FigmaBoardVisualInstrumentedTest {
         composeRule.waitForIdle()
         val image = composeRule.onNodeWithTag("figma-evidence-screen").captureToImage()
         check(image.width >= 300 && image.height >= 600) { "Expected a full emulator frame, got ${image.width}x${image.height}" }
-        Log.i("FigmaEvidence", "Capturing $name at ${image.width}x${image.height}")
-        InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("screencap -p /sdcard/Download/$name").close()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, name)
+            put(MediaStore.Downloads.MIME_TYPE, "image/png")
+            put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/figma-evidence")
+        }
+        val uri = requireNotNull(context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
+        context.contentResolver.openOutputStream(uri).use { output ->
+            check(output != null && image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, output))
+        }
     }
 }
