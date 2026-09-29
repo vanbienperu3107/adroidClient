@@ -1,21 +1,17 @@
 package dev.chungjungsoo.gptmobile
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.chungjungsoo.gptmobile.data.database.entity.ChatRoom
 import dev.chungjungsoo.gptmobile.data.model.ApiType
@@ -42,7 +38,7 @@ class ApprovedUiUserJourneyInstrumentedTest {
         val direct = ChatRoom(7, "Direct history", listOf(ApiType.OPENAI))
         composeRule.setContent {
             MaterialTheme {
-                Column(Modifier.height(400.dp).verticalScroll(rememberScrollState())) {
+                Column {
                     HomeTopAppBar(false, 0, false, "", androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(), {}, { route = "search" }, { route = "settings" }, {})
                     OpenCodeChatRow(openCode) { route = "opencode:${openCode.serverId}:${openCode.directory}:${openCode.sessionId}" }
                     DirectChatRow(direct, false, false, emptyMap(), {}, { route = "direct:${direct.id}" }, {})
@@ -84,21 +80,21 @@ class ApprovedUiUserJourneyInstrumentedTest {
                 }
             }
         }
-        composeRule.onNodeWithTag("settings-theme").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings-theme").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("theme", destination)
-        composeRule.onNodeWithTag("settings-opencode").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings-opencode").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("opencode", destination)
-        composeRule.onNodeWithTag("settings-cliproxy").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings-cliproxy").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("cliproxy", destination)
-        composeRule.onNodeWithTag("settings-about").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings-about").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("about", destination)
-        composeRule.onNodeWithTag("settings-openai").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings-openai").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("OPENAI", destination)
-        composeRule.onNodeWithTag("settings-anthropic").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings-anthropic").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("ANTHROPIC", destination)
-        composeRule.onNodeWithTag("settings-google").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings-google").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("GOOGLE", destination)
-        composeRule.onNodeWithTag("settings-ollama").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings-ollama").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertEquals("OLLAMA", destination)
     }
 
