@@ -64,7 +64,7 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel(), settingOnClick: (
         return
     }
     Column {
-        BoardHeader("Chats", action = "⌕", onAction = { search = true })
+        BoardHeader("Chats", action = "⌕", onAction = { search = true }, secondaryAction = "⚙", onSecondaryAction = settingOnClick)
         LazyColumn(Modifier.weight(1f).padding(horizontal = 18.dp)) {
             item {
                 BoardRow("New chat", "OpenCode or Direct provider", "✎", { choice = true }, trailing = "Choose", modifier = Modifier.padding(top = 21.dp).testTag("new-chat"))

@@ -33,7 +33,7 @@ val BoardLine = Color(0xFFD1D1D1)
 val BoardSurface = Color(0xFFF7F7F7)
 
 @Composable
-fun BoardHeader(title: String, subtitle: String? = null, onBack: (() -> Unit)? = null, action: String? = null, onAction: (() -> Unit)? = null) {
+fun BoardHeader(title: String, subtitle: String? = null, onBack: (() -> Unit)? = null, action: String? = null, onAction: (() -> Unit)? = null, secondaryAction: String? = null, onSecondaryAction: (() -> Unit)? = null) {
     Row(
         modifier = Modifier.fillMaxWidth().height(77.dp).background(Color.White).padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -48,6 +48,10 @@ fun BoardHeader(title: String, subtitle: String? = null, onBack: (() -> Unit)? =
         }
         action?.let {
             IconButton(onClick = onAction ?: {}, modifier = Modifier.size(34.dp).background(BoardSurface, RoundedCornerShape(10.dp))) { Text(it, color = BoardInk) }
+        }
+        secondaryAction?.let {
+            Spacer(Modifier.width(8.dp))
+            IconButton(onClick = onSecondaryAction ?: {}, modifier = Modifier.size(34.dp).background(BoardSurface, RoundedCornerShape(10.dp))) { Text(it, color = BoardInk) }
         }
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(BoardLine))

@@ -3,6 +3,7 @@ package dev.chungjungsoo.gptmobile.presentation.ui.chat
 import android.util.Log
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,15 +18,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
@@ -36,9 +34,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,9 +43,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
@@ -64,6 +59,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dev.chungjungsoo.gptmobile.R
 import dev.chungjungsoo.gptmobile.data.database.entity.Message
 import dev.chungjungsoo.gptmobile.data.model.ApiType
+import dev.chungjungsoo.gptmobile.presentation.common.BoardHeader
+import dev.chungjungsoo.gptmobile.presentation.common.BoardInk
+import dev.chungjungsoo.gptmobile.presentation.common.BoardLine
+import dev.chungjungsoo.gptmobile.presentation.common.BoardSurface
 import dev.chungjungsoo.gptmobile.util.DefaultHashMap
 import dev.chungjungsoo.gptmobile.util.collectManagedState
 import dev.chungjungsoo.gptmobile.util.multiScrollStateSaver
@@ -82,7 +81,6 @@ fun ChatScreen(
     val systemChatMargin = 32.dp
     val maximumChatBubbleWidth = screenWidth - 48.dp - systemChatMargin
     val listState = rememberLazyListState()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     val isIdle by chatViewModel.isIdle.collectManagedState()
     val isLoaded by chatViewModel.isLoaded.collectManagedState()
@@ -123,12 +121,11 @@ fun ChatScreen(
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection)
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
             ) { focusManager.clearFocus() },
-        topBar = { ChatTopBar(onBackAction, scrollBehavior) },
+        topBar = { BoardHeader("Direct conversation", "Direct provider · local history", onBackAction, "⋮") },
         bottomBar = {
             ChatInputBox(
                 value = question,
@@ -290,25 +287,6 @@ private fun groupMessages(messages: List<Message>): HashMap<Int, MutableList<Mes
     return classifiedMessages
 }
 
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun ChatTopBar(
-    onBackAction: () -> Unit,
-    scrollBehavior: TopAppBarScrollBehavior
-) {
-    TopAppBar(
-        title = { /*TODO*/ },
-        navigationIcon = {
-            IconButton(
-                onClick = onBackAction
-            ) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.go_back))
-            }
-        },
-        scrollBehavior = scrollBehavior
-    )
-}
-
 @Preview
 @Composable
 fun ChatInputBox(
@@ -324,9 +302,8 @@ fun ChatInputBox(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .windowInsetsPadding(BottomAppBarDefaults.windowInsets)
-            .padding(BottomAppBarDefaults.ContentPadding)
-            .background(color = MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 18.dp, vertical = 10.dp)
+            .background(color = Color.White)
     ) {
         BasicTextField(
             modifier = Modifier
@@ -339,10 +316,10 @@ fun ChatInputBox(
             decorationBox = { innerTextField ->
                 Row(
                     modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
                         .fillMaxWidth()
                         .height(IntrinsicSize.Min)
-                        .background(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(size = 24.dp))
+                        .background(color = BoardSurface, shape = RoundedCornerShape(size = 16.dp))
+                        .border(1.dp, BoardLine, RoundedCornerShape(size = 16.dp))
                         .padding(all = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -350,7 +327,7 @@ fun ChatInputBox(
                         modifier = Modifier
                             .weight(1f)
                             .align(Alignment.CenterVertically)
-                            .padding(start = 16.dp)
+                            .padding(start = 10.dp)
                     ) {
                         if (value.isEmpty()) {
                             Text(
@@ -362,9 +339,10 @@ fun ChatInputBox(
                     }
                     IconButton(
                         enabled = chatEnabled && sendButtonEnabled,
-                        onClick = { onSendButtonClick(value) }
+                        onClick = { onSendButtonClick(value) },
+                        modifier = Modifier.background(BoardInk, RoundedCornerShape(12.dp))
                     ) {
-                        Icon(imageVector = ImageVector.vectorResource(id = R.drawable.ic_send), contentDescription = stringResource(R.string.send))
+                        Icon(imageVector = ImageVector.vectorResource(id = R.drawable.ic_send), contentDescription = stringResource(R.string.send), tint = Color.White)
                     }
                 }
             }
