@@ -43,7 +43,7 @@ class FigmaBoardVisualInstrumentedTest {
         composeRule.setContent {
             Frame {
                 Column(Modifier.fillMaxSize()) {
-                    BoardHeader("Chats", action = "⌕")
+                    BoardHeader("Chats", action = "⌕", secondaryAction = "⚙")
                     BoardRow("New chat", "OpenCode or Direct provider", "✎", {}, trailing = "Choose", Modifier.padding(18.dp))
                     BoardSection("OpenCode chats", Modifier.padding(horizontal = 18.dp))
                     BoardRow("Figma MCP review", "OpenCode chat · idle", "▣", {}, modifier = Modifier.padding(horizontal = 18.dp))
