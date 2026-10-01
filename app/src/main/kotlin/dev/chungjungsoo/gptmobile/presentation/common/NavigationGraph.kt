@@ -74,10 +74,20 @@ fun NavGraphBuilder.openCodeNavigation(navController: NavHostController) {
                 defaultValue = null
             }
         )
-    ) { OpenCodeBrowseScreen(onBack = { navController.navigateUp() }) }
+    ) {
+        OpenCodeBrowseScreen(onBack = {
+            if (!navController.popBackStack(Route.CHAT_LIST, inclusive = false)) {
+                navController.navigate(Route.CHAT_LIST) { launchSingleTop = true }
+            }
+        })
+    }
     composable(Route.OPEN_CODE_SERVERS) {
         OpenCodeServerListScreen(
-            onBack = { navController.navigateUp() },
+            onBack = {
+                if (!navController.popBackStack(Route.CHAT_LIST, inclusive = false)) {
+                    navController.navigate(Route.CHAT_LIST) { launchSingleTop = true }
+                }
+            },
             onEdit = { id -> navController.navigate(Route.OPEN_CODE_SERVER_EDIT.replace("{serverId}", id ?: "new").replace("{returnToChats}", "true")) }
         )
     }

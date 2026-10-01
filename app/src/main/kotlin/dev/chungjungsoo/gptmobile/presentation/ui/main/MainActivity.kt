@@ -43,7 +43,6 @@ class MainActivity : ComponentActivity() {
                     }
                     if (target != null) {
                         navController.navigate(target) {
-                            popUpTo(Route.CHAT_LIST) { inclusive = true }
                             launchSingleTop = true
                         }
                     }

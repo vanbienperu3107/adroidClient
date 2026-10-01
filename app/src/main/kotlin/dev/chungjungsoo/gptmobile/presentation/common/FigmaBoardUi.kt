@@ -35,12 +35,12 @@ val BoardSurface = Color(0xFFF7F7F7)
 @Composable
 fun BoardHeader(title: String, subtitle: String? = null, onBack: (() -> Unit)? = null, action: String? = null, onAction: (() -> Unit)? = null, secondaryAction: String? = null, onSecondaryAction: (() -> Unit)? = null) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(77.dp).background(Color.White).padding(horizontal = 18.dp),
+        modifier = Modifier.fillMaxWidth().height(76.dp).background(Color.White).padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (onBack != null) {
             IconButton(onClick = onBack, modifier = Modifier.size(28.dp)) { Text("‹", color = BoardInk, style = MaterialTheme.typography.headlineMedium) }
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(10.dp))
         }
         Column(Modifier.weight(1f)) {
             Text(title, color = BoardInk, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)

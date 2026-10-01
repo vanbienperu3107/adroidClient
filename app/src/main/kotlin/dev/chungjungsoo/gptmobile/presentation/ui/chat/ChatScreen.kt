@@ -36,6 +36,7 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.awaitFrame
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -105,17 +106,16 @@ fun ChatScreen(
     val canUseChat = (chatViewModel.enabledPlatformsInChat.toSet() - appEnabledPlatforms.toSet()).isEmpty()
     val groupedMessages = remember(messages) { groupMessages(messages) }
     val latestMessageIndex = groupedMessages.keys.maxOrNull() ?: 0
+    val latestDirectListIndex = directChatTailIndex(groupedMessages.size, isIdle)
     val chatBubbleScrollStates = rememberSaveable(saver = multiScrollStateSaver) { DefaultHashMap<Int, ScrollState>({ ScrollState(0) }) }
 
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(isIdle) {
-        listState.animateScrollToItem(groupedMessages.keys.size)
-    }
-
-    LaunchedEffect(isLoaded) {
-        delay(300)
-        listState.animateScrollToItem(groupedMessages.keys.size)
+    LaunchedEffect(messages.size, isIdle, isLoaded) {
+        if (groupedMessages.isNotEmpty()) {
+            awaitFrame()
+            listState.scrollToItem(latestDirectListIndex)
+        }
     }
 
     Scaffold(
@@ -141,7 +141,7 @@ fun ChatScreen(
             if (listState.canScrollForward) {
                 ScrollToBottomButton {
                     scope.launch {
-                        listState.animateScrollToItem(groupedMessages.keys.size)
+                        listState.animateScrollToItem(latestDirectListIndex)
                     }
                 }
             }
@@ -285,6 +285,11 @@ private fun groupMessages(messages: List<Message>): HashMap<Int, MutableList<Mes
         }
     }
     return classifiedMessages
+}
+
+internal fun directChatTailIndex(groupCount: Int, isIdle: Boolean): Int {
+    if (groupCount == 0) return 0
+    return groupCount - 1 + if (isIdle) 0 else 2
 }
 
 @Preview

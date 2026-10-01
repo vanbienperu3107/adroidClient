@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.awaitFrame
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -125,7 +126,17 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
     if (!loading && !data.locked && data.sessions.isEmpty()) item { BoardRow("No OpenCode chats in this project.", trailing = "") }
 }
 
-@Composable fun BoardOpenCodeTimeline(modifier: Modifier, data: dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseData, loading: Boolean, model: OpenCodeModelOption?, variant: String?, onInteraction: (CachedOpenCodeInteraction) -> Unit) = LazyColumn(modifier.padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+@Composable
+fun BoardOpenCodeTimeline(modifier: Modifier, data: dev.chungjungsoo.gptmobile.data.opencode.OpenCodeBrowseData, loading: Boolean, model: OpenCodeModelOption?, variant: String?, onInteraction: (CachedOpenCodeInteraction) -> Unit) {
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(data.messages.size, data.prompts.size, data.interactions.size, loading) {
+        if (!loading) {
+            awaitFrame()
+            val tail = listState.layoutInfo.totalItemsCount - 1
+            if (tail >= 0) listState.scrollToItem(tail)
+        }
+    }
+    LazyColumn(modifier.padding(horizontal = 18.dp), state = listState, verticalArrangement = Arrangement.spacedBy(12.dp)) {
     if (loading) item { BoardRow("Loading chat from OpenCode…", "Fetching full history for this chat.", trailing = "", modifier = Modifier.padding(top = 15.dp)) }
     if (data.stale) item { BoardRow("Cached · not synchronized", "Pull to refresh before acting.", trailing = "") }
     if (data.locked) item { BoardRow("Authentication required", "Return to server settings to sign in again", trailing = "") }
@@ -140,6 +151,7 @@ fun OpenCodeBrowseScreen(onBack: () -> Unit, viewModel: OpenCodeBrowseViewModel 
     items(data.messages, key = { it.id }) { BoardMessage(it, model?.name, variant) }
     items(data.prompts, key = { it.clientMessageId }) { BoardRow("Prompt ${it.state.lowercase()}", it.content.take(160), trailing = "") }
     items(data.interactions, key = { it.requestId }) { BoardRow(if (it.kind == "permission") "Permission needed" else "Question", it.title, "⌘", { onInteraction(it) }, modifier = Modifier.testTag("opencode-interaction-${it.requestId}")) }
+    }
 }
 
 @Composable private fun BoardMessage(message: OpenCodeHistoryMessage, model: String?, variant: String?) {
